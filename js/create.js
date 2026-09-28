@@ -88,12 +88,16 @@ addOptionButton.addEventListener('click', () => {
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const options = normalizeOptions(pendingOptions).options;
-  const errors = validatePollInput({
-    title: titleInput.value,
-    description: descriptionInput.value,
-    options,
-  });
+  const normalization = normalizeOptions(pendingOptions);
+  const options = normalization.options;
+  const errors = [
+    ...normalization.errors,
+    ...validatePollInput({
+      title: titleInput.value,
+      description: descriptionInput.value,
+      options: pendingOptions,
+    }),
+  ];
   if (errors.length > 0) {
     showError(errors);
     return;
@@ -103,22 +107,29 @@ form.addEventListener('submit', async (event) => {
   showError('');
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const id = generatePollId();
-    const { error } = await client.from('polls').insert({
-      id,
-      title: titleInput.value.trim(),
-      description: descriptionInput.value.trim() || null,
-      options,
-    });
-    if (!error) {
-      const link = buildShareLink(id);
-      shareLink.textContent = link;
-      openPollLink.href = link;
-      form.closest('.card').hidden = true;
-      resultPanel.hidden = false;
-      return;
-    }
-    if (error.code !== '23505') {
-      showError(error.message || 'Could not create poll.');
+    try {
+      const { error } = await client.from('polls').insert({
+        id,
+        title: titleInput.value.trim(),
+        description: descriptionInput.value.trim() || null,
+        options,
+      });
+      if (!error) {
+        const link = buildShareLink(id);
+        shareLink.textContent = link;
+        openPollLink.href = link;
+        form.closest('.card').hidden = true;
+        resultPanel.hidden = false;
+        return;
+      }
+      if (error.code !== '23505') {
+        showError(error.message || 'Could not create poll.');
+        submitButton.disabled = false;
+        return;
+      }
+    } catch (error) {
+      if (error?.code === '23505') continue;
+      showError(error?.message || 'Could not create poll.');
       submitButton.disabled = false;
       return;
     }
