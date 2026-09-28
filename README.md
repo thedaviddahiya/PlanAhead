@@ -32,6 +32,8 @@ python3 -m http.server 8000
 
 Open `http://localhost:8000/` in a browser. For a configured local test, first replace the values in `js/config.js`; use a deployed GitHub Pages URL for share links in production.
 
+The full create, share, two-response, and live-results browser E2E check requires real Supabase keys and is an owner-manual verification step.
+
 ## Project files
 
 - `index.html` and `js/create.js` contain the poll creation flow.
