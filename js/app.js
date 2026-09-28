@@ -96,6 +96,7 @@ export function formatOption(option) {
   const timeText = isValidTimeFormat(timeValue) ? timeValue : '';
   if (dateText && timeText) return `${dateText} · ${timeText}`;
   if (dateText) return dateText;
+  if (timeText) return timeText;
   if (!dateText && typeof option?.label === 'string' && option.label.trim()) return option.label.trim();
   return 'Option';
 }
