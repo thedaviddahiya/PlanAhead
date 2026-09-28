@@ -6,6 +6,11 @@ import {
   validatePollInput,
 } from './app.js';
 
+const incomingPollId = new URLSearchParams(location.search).get('poll');
+if (incomingPollId && /^[23456789a-hjkmnp-z]{8}$/.test(incomingPollId)) {
+  location.replace(buildShareLink(incomingPollId));
+}
+
 const titleInput = document.querySelector('#title');
 const descriptionInput = document.querySelector('#description');
 const dateInput = document.querySelector('#date-input');

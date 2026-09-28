@@ -134,9 +134,16 @@ test('buildViewModel keeps duplicate names and tolerates malformed options', () 
   assert.equal(model.maxCount, 2);
 });
 
-test('buildShareLink uses the current origin and pathname', () => {
-  globalThis.location = { origin: 'https://x.github.io', pathname: '/availability-poll/' };
-  assert.equal(buildShareLink('abcdefgh'), 'https://x.github.io/availability-poll/?poll=abcdefgh');
+test('buildShareLink points at the respond page for the current poll', () => {
+  globalThis.location = {
+    origin: 'https://x.github.io',
+    pathname: '/availability-poll/',
+    href: 'https://x.github.io/availability-poll/',
+  };
+  assert.equal(
+    buildShareLink('abcdefgh'),
+    'https://x.github.io/availability-poll/poll.html?poll=abcdefgh'
+  );
 });
 
 test('getClient handles missing, placeholder, and valid Supabase configuration', () => {

@@ -135,7 +135,7 @@ export function buildViewModel(options, responses) {
 }
 
 export function buildShareLink(pollId) {
-  return `${location.origin}${location.pathname}?poll=${pollId}`;
+  return new URL(`poll.html?poll=${encodeURIComponent(pollId)}`, location.href).href;
 }
 
 export function getClient() {

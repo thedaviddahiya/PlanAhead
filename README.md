@@ -18,7 +18,7 @@ PlanAhead is a small, Doodle-style availability poll. Create a poll with a title
 
    The anon key is intended for browser use. Do not put a Supabase service-role key in this file. Replace this file's placeholder values before deploying.
 5. Push the repository to GitHub, then open **Settings → Pages**. Deploy from branch `main` and folder `/ (root)`.
-6. Add your GitHub username and repository name to the share-link expectation. With a repository named `availability-poll`, links look like `https://username.github.io/availability-poll/?poll=abc12345`, where the poll ID is exactly 8 characters. If the repository is named differently, use that name in the path.
+6. Share links point at the respond page: with a repository named `availability-poll`, a share link looks like `https://username.github.io/availability-poll/poll.html?poll=abc12345`, where the poll ID is exactly 8 characters. Home-page links of the form `https://username.github.io/availability-poll/?poll=abc12345` redirect to the respond page automatically. If the repository is named differently, use that name in the path.
 
 The schema intentionally permits anonymous clients to select polls and responses, insert polls, and insert responses for an existing poll. It does not permit anonymous updates or deletes. Responses must contain at least one selected option, and the database validates poll ID, title, description, option shape, and response name lengths.
 
