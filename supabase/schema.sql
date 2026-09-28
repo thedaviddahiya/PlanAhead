@@ -3,10 +3,16 @@
 create extension if not exists pgcrypto;
 
 create table public.polls (
-  id text primary key,
+  id text primary key check (char_length(id) = 8),
   title text not null check (char_length(title) between 1 and 200),
   description text check (description is null or char_length(description) <= 2000),
-  options jsonb not null default '[]' check (jsonb_typeof(options) = 'array'),
+  options jsonb not null default '[]' check (
+    jsonb_typeof(options) = 'array'
+    and not jsonb_path_exists(
+      options,
+      '$[*] ? (@.type() != "object" || !exists(@.date) || @.date.type() != "string")'
+    )
+  ),
   created_at timestamptz default now()
 );
 
@@ -16,7 +22,7 @@ create table public.responses (
   name text not null check (char_length(name) between 1 and 80),
   selected int[] not null default '{}',
   created_at timestamptz default now(),
-  check (array_length(selected, 1) >= 1)
+  check (cardinality(selected) >= 1)
 );
 
 create index responses_poll_id_idx on public.responses(poll_id);
