@@ -15,6 +15,7 @@ const respondPanel = document.querySelector('#respond-panel');
 const thankyouPanel = document.querySelector('#thankyou-panel');
 const resultsPanel = document.querySelector('#results-panel');
 const resultsGrid = document.querySelector('#results-grid');
+const resultsStatus = document.querySelector('#results-status');
 const refreshButton = document.querySelector('#refresh-results');
 const responseForm = document.querySelector('#response-form');
 const nameInput = document.querySelector('#name-input');
@@ -96,6 +97,18 @@ function renderResults(model, responses) {
 
 let client;
 let poll;
+let realtimeChannel;
+
+function setResultsStatus(message) {
+  resultsStatus.textContent = message;
+}
+
+function cleanupRealtime() {
+  if (!realtimeChannel) return;
+  realtimeChannel.unsubscribe();
+  client.removeChannel(realtimeChannel);
+  realtimeChannel = null;
+}
 
 async function loadResults() {
   const { data, error } = await client.from('responses')
@@ -104,9 +117,28 @@ async function loadResults() {
     .order('created_at');
   if (error) throw error;
   renderResults(buildViewModel(poll.options, data), data);
+  setResultsStatus('');
+}
+
+async function refreshResults() {
+  try {
+    await loadResults();
+  } catch (error) {
+    setResultsStatus('Results may be out of date. Refresh failed.');
+  }
+}
+
+function subscribeToResults() {
+  cleanupRealtime();
+  realtimeChannel = client.channel(`planahead-${pollId}`)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'responses', filter: `poll_id=eq.${pollId}`,
+    }, () => refreshResults())
+    .subscribe();
 }
 
 async function loadPoll() {
+  cleanupRealtime();
   try {
     const { data, error } = await client.from('polls').select('*').eq('id', pollId).maybeSingle();
     if (error) throw error;
@@ -121,11 +153,7 @@ async function loadPoll() {
     respondPanel.hidden = false;
     resultsPanel.hidden = false;
     await loadResults();
-    client.channel(`planahead-${pollId}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'responses', filter: `poll_id=eq.${pollId}`,
-      }, () => loadResults().catch(() => {}))
-      .subscribe();
+    subscribeToResults();
   } catch (error) {
     showNotFound('Could not reach the database.', true);
   }
@@ -152,21 +180,23 @@ responseForm.addEventListener('submit', async (event) => {
     if (error) throw error;
     respondPanel.hidden = true;
     thankyouPanel.hidden = false;
-    await loadResults();
+    await refreshResults();
   } catch (error) {
     showError(error?.message || 'Could not submit your response.');
     submitButton.disabled = false;
   }
 });
 
-refreshButton.addEventListener('click', () => loadResults().catch(() => {}));
+refreshButton.addEventListener('click', () => refreshResults());
 window.addEventListener('focus', () => {
-  if (poll) loadResults().catch(() => {});
+  if (poll) refreshResults();
 });
 window.addEventListener('visibilitychange', () => {
-  if (!document.hidden && poll) loadResults().catch(() => {});
+  if (!document.hidden && poll) refreshResults();
 });
 retryButton.addEventListener('click', () => loadPoll());
+window.addEventListener('pagehide', cleanupRealtime);
+window.addEventListener('beforeunload', cleanupRealtime);
 
 if (!validPollId) {
   showNotFound('This poll link is invalid.');
