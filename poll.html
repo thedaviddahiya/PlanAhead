@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Poll | PlanAhead</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .results-scroll { overflow-x: auto; }
+    #results-grid table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+    #results-grid th, #results-grid td { padding: 0.65rem; border-bottom: 1px solid #d7dce1; text-align: left; }
+    #results-grid th:first-child, #results-grid td:first-child { position: sticky; left: 0; background: #fff; }
+    #results-grid th:first-child { z-index: 1; }
+    #results-grid .available { color: #2457a6; font-weight: 700; text-align: center; }
+    #results-grid .max-row td { background: #eef5ff; }
+    #results-grid .max-row td:first-child { background: #eef5ff; }
+    #results-grid .count { font-weight: 700; }
+    .response-option { display: flex; gap: 0.6rem; align-items: center; margin: 0.65rem 0; font-weight: 400; }
+    .response-option input { width: auto; min-height: auto; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script type="module" src="js/config.js"></script>
+  <script type="module" src="js/poll.js"></script>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <h1 id="poll-title">PlanAhead poll</h1>
+      <p id="poll-description"></p>
+    </header>
+
+    <section id="notfound-panel" class="card" hidden aria-live="polite">
+      <h2>Poll unavailable</h2>
+      <p id="notfound-message">This poll could not be found.</p>
+      <button id="retry-poll" type="button" hidden>Try again</button>
+    </section>
+
+    <section id="setup-notice" class="card notice" hidden>
+      Supabase is not configured yet. Add your project details in <a href="README.md#setup">the setup guide</a>.
+    </section>
+
+    <section id="respond-panel" class="card" hidden aria-labelledby="respond-heading">
+      <h2 id="respond-heading">Your availability</h2>
+      <form id="response-form">
+        <label for="name-input">Your name</label>
+        <input id="name-input" name="name" type="text" maxlength="80" autocomplete="name" required>
+        <fieldset>
+          <legend>Select all times that work</legend>
+          <div id="options-list"></div>
+        </fieldset>
+        <div id="respond-error" class="error" role="alert" aria-live="polite"></div>
+        <button id="submit-response" type="submit">Submit availability</button>
+      </form>
+    </section>
+
+    <section id="thankyou-panel" class="card" hidden aria-live="polite">
+      <h2>Thanks for responding</h2>
+      <p>Your availability has been added to the results.</p>
+    </section>
+
+    <section id="results-panel" class="card" hidden aria-labelledby="results-heading">
+      <h2 id="results-heading">Results</h2>
+      <button id="refresh-results" type="button">Refresh results</button>
+      <div id="results-grid" class="results-scroll" aria-live="polite"></div>
+    </section>
+  </main>
+</body>
+</html>
