@@ -1,0 +1,149 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  buildShareLink,
+  buildViewModel,
+  findDuplicateKeys,
+  formatOption,
+  generatePollId,
+  getClient,
+  isValidDateFormat,
+  isValidTimeFormat,
+  normalizeOptions,
+  validatePollInput,
+  validateResponseInput,
+} from '../js/app.js';
+
+const validDate = '2026-09-29';
+const validOption = { date: '2026-09-29', time: '18:00', label: null };
+
+test('generatePollId uses the required alphabet and default length', () => {
+  const alphabet = '23456789abcdefghjkmnpqrstuvwxyz';
+  const first = generatePollId();
+  const second = generatePollId();
+
+  assert.equal(first.length, 8);
+  assert.match(first, new RegExp(`^[${alphabet}]+$`));
+  assert.notEqual(first, second);
+});
+
+test('date and time format validators reject malformed values', () => {
+  assert.equal(isValidDateFormat('2026-09-28'), true);
+  assert.equal(isValidDateFormat('2026-13-01'), false);
+  assert.equal(isValidDateFormat('09/28/2026'), false);
+  assert.equal(isValidDateFormat('2026-2-8'), false);
+  assert.equal(isValidTimeFormat('18:00'), true);
+  assert.equal(isValidTimeFormat('24:00'), false);
+  assert.equal(isValidTimeFormat('6:00'), false);
+  assert.equal(isValidTimeFormat('18:60'), false);
+});
+
+test('normalizeOptions cleans entries without sorting them', () => {
+  const result = normalizeOptions([
+    { date: ' 2026-09-29 ', time: ' 18:00 ', label: '  Dinner ' },
+    { date: '', time: '', label: null },
+    { date: '2026-13-01', time: '18:00', label: null },
+    { date: validDate, time: '18:00', label: null },
+    { date: validDate, time: '18:00', label: null },
+  ]);
+
+  assert.deepEqual(result.options, [
+    { date: validDate, time: '18:00', label: 'Dinner' },
+  ]);
+  assert.equal(result.errors.length, 4);
+});
+
+test('findDuplicateKeys identifies repeated date and time pairs', () => {
+  assert.deepEqual(findDuplicateKeys([
+    validOption,
+    validOption,
+    { date: validDate, time: null, label: null },
+  ]), [`${validDate}|18:00`]);
+});
+
+test('validatePollInput reports title, option, and duplicate errors', () => {
+  assert.deepEqual(validatePollInput({ title: '', description: '', options: [] }), [
+    'Please enter a title.',
+    'Add at least one option.',
+  ]);
+  assert.deepEqual(validatePollInput({ title: 'Poll', description: '', options: [validOption, validOption] }), [
+    'Remove duplicate options.',
+  ]);
+  assert.deepEqual(validatePollInput({ title: 'Poll', description: 'Details', options: [validOption] }), []);
+  assert.ok(validatePollInput({ title: 'x'.repeat(201), description: '', options: [validOption] }).length);
+  assert.ok(validatePollInput({ title: 'Poll', description: 'x'.repeat(2001), options: [validOption] }).length);
+});
+
+test('validateResponseInput requires a name and a selection', () => {
+  assert.deepEqual(validateResponseInput('', 0), [
+    'Please enter your name.',
+    'Select at least one option.',
+  ]);
+  assert.deepEqual(validateResponseInput('  ', 1), ['Please enter your name.']);
+  assert.deepEqual(validateResponseInput('A'.repeat(81), 1), ['Please enter your name.']);
+  assert.deepEqual(validateResponseInput('Alex', 0), ['Select at least one option.']);
+  assert.deepEqual(validateResponseInput('Alex', 1), []);
+});
+
+test('formatOption renders fixed UTC calendar dates without shifting them', () => {
+  assert.equal(formatOption({ date: '2026-09-28', time: '18:00' }), 'Mon, 28 Sep 2026 · 18:00');
+  assert.equal(formatOption({ date: '2026-09-28', time: null }), 'Mon, 28 Sep 2026');
+  assert.equal(formatOption({ date: 'not-a-date', time: '18:00', label: null }), 'Option');
+  assert.equal(formatOption({ date: null, time: '18:00', label: 'Custom' }), 'Custom');
+  assert.equal(formatOption(null), 'Option');
+});
+
+test('buildViewModel counts valid selections and ignores out-of-bounds values', () => {
+  const options = [validOption, { date: '2026-09-30', time: null, label: null }];
+  const responses = [
+    { name: 'Ana', selected: [0, 99], created_at: '2026-01-02' },
+    { name: 'Bo', selected: [1], created_at: '2026-01-03' },
+    { name: 'Cy', selected: [0, '1'], created_at: '2026-01-04' },
+  ];
+  const model = buildViewModel(options, responses);
+
+  assert.deepEqual(model.rows.map((row) => row.count), [2, 1]);
+  assert.deepEqual(model.rows[0].voters, ['Ana', 'Cy']);
+  assert.deepEqual(model.rows[1].voters, ['Bo']);
+  assert.deepEqual(model.names, ['Ana', 'Bo', 'Cy']);
+  assert.equal(model.maxCount, 2);
+});
+
+test('buildViewModel keeps duplicate names and tolerates malformed options', () => {
+  const model = buildViewModel([null, { junk: true }, validOption], [
+    { name: 'Same', selected: [0, 2], created_at: '2026-01-02' },
+    { name: 'Same', selected: [2], created_at: '2026-01-03' },
+  ]);
+
+  assert.deepEqual(model.names, ['Same', 'Same']);
+  assert.equal(model.rows[0].option, 'Option');
+  assert.equal(model.rows[1].option, 'Option');
+  assert.deepEqual(model.rows[2].voters, ['Same', 'Same']);
+  assert.equal(model.maxCount, 2);
+});
+
+test('buildShareLink uses the current origin and pathname', () => {
+  globalThis.location = { origin: 'https://x.github.io', pathname: '/availability-poll/' };
+  assert.equal(buildShareLink('abcdefgh'), 'https://x.github.io/availability-poll/?poll=abcdefgh');
+});
+
+test('getClient handles missing, placeholder, and valid Supabase configuration', () => {
+  globalThis.window = {};
+  assert.equal(getClient(), null);
+
+  window.PLANAHEAD_CONFIG = { supabaseUrl: '<URL>', supabaseAnonKey: '<KEY>' };
+  assert.equal(getClient(), null);
+
+  let received;
+  window.supabase = {
+    createClient: (url, key) => {
+      received = [url, key];
+      return { from: (table) => ({ table }) };
+    },
+  };
+  window.PLANAHEAD_CONFIG = { supabaseUrl: 'https://db.example', supabaseAnonKey: 'secret' };
+  const client = getClient();
+  assert.equal(typeof client.from, 'function');
+  assert.deepEqual(received, ['https://db.example', 'secret']);
+  assert.equal(getClient(), client);
+});
