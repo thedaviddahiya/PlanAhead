@@ -93,7 +93,7 @@ export function formatOption(option) {
     const date = new Date(Date.UTC(year, month - 1, day));
     dateText = `${WEEKDAYS[date.getUTCDay()]}, ${day} ${MONTHS[month - 1]} ${year}`;
   } else if (typeof dateValue === 'string' && dateValue.trim()) {
-    dateText = dateValue.trim();
+    dateText = dateValue;
   }
   const timeText = isValidTimeFormat(timeValue) ? timeValue : '';
   if (dateText && timeText) return `${dateText} · ${timeText}`;

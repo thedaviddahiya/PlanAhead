@@ -90,6 +90,7 @@ test('formatOption renders fixed UTC calendar dates without shifting them', () =
   assert.equal(formatOption({ date: '2026-09-28', time: null }), 'Mon, 28 Sep 2026');
   assert.equal(formatOption({ date: 'legacy-value', time: null }), 'legacy-value');
   assert.equal(formatOption({ date: 'legacy-value', time: '18:00' }), 'legacy-value · 18:00');
+  assert.equal(formatOption({ date: '  ', time: '18:00' }), '18:00');
   assert.equal(formatOption({ date: '', time: '18:00' }), '18:00');
   assert.equal(formatOption({ date: null, time: '09:30' }), '09:30');
   assert.equal(formatOption(null), 'Option');

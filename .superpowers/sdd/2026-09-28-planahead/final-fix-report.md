@@ -33,3 +33,11 @@
 - `node --check js/app.js js/create.js js/poll.js js/config.js`: passed with no output.
 - `grep -nE 'Back to PlanAhead|jsonb_array_length|like_regex|authenticated' poll.html supabase/schema.sql`: found the home link, option constraints, and all authenticated policies.
 - `git diff --check`: passed with no output.
+
+## Scoped Re-review Fix
+
+- Changed `js/app.js:95-96` so a non-empty-after-trim invalid date is detected using `trim()` but rendered using the raw stored string; whitespace-only dates remain absent and render valid times alone.
+- Extended `formatOption renders fixed UTC calendar dates without shifting them` in `test/app.test.js:88-97` for invalid dates with and without time, whitespace-only dates with time, and null dates with time.
+- `node --test`: 12 tests passed, 0 failed.
+- `node --check js/app.js`: passed with no output.
+- `git diff --check`: passed with no output.
