@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create a poll | PlanAhead</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script type="module" src="js/config.js"></script>
+  <script type="module" src="js/create.js"></script>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <h1>PlanAhead</h1>
+      <p>Find a time that works for everyone.</p>
+    </header>
+
+    <section class="card" aria-labelledby="create-heading">
+      <h2 id="create-heading">Create a poll</h2>
+      <div id="setup-notice" class="notice" hidden>
+        Supabase is not configured yet. Add your project details in <a href="README.md#setup">the setup guide</a>.
+      </div>
+      <form id="create-form">
+        <label for="title">Title</label>
+        <input id="title" name="title" type="text" maxlength="200" required>
+
+        <label for="description">Description <span>(optional)</span></label>
+        <textarea id="description" name="description" maxlength="2000" rows="3"></textarea>
+
+        <fieldset>
+          <legend>Options</legend>
+          <div class="option-inputs">
+            <div>
+              <label for="date-input">Date</label>
+              <input id="date-input" type="date">
+            </div>
+            <div>
+              <label for="time-input">Time <span>(optional)</span></label>
+              <input id="time-input" type="time">
+            </div>
+            <button id="add-option" type="button">Add option</button>
+          </div>
+          <ul id="options-list" aria-live="polite"></ul>
+        </fieldset>
+
+        <div id="create-error" class="error" role="alert" aria-live="polite"></div>
+        <button type="submit">Create poll</button>
+      </form>
+    </section>
+
+    <section id="result-panel" class="card" hidden aria-labelledby="result-heading">
+      <h2 id="result-heading">Your poll is ready</h2>
+      <p>Share this link with your group:</p>
+      <p id="share-link" class="share-link"></p>
+      <div class="result-actions">
+        <button id="copy-link" type="button">Copy link</button>
+        <a id="open-poll" class="button" href="">Open poll</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
