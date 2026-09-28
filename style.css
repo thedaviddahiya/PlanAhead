@@ -222,7 +222,7 @@ legend {
 }
 
 .option-chip button {
-  min-height: 2rem;
+  min-height: 2.5rem;
   padding: 0.25rem 0.6rem;
   border-color: transparent;
   color: var(--accent-dark);
@@ -269,7 +269,10 @@ legend {
 }
 
 .notice {
-  border-color: #edd99d;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #edd99d;
+  border-radius: 0.55rem;
   color: #614700;
   background: var(--warning-soft);
 }
@@ -299,7 +302,7 @@ legend {
 }
 
 #refresh-results {
-  min-height: 2.4rem;
+  min-height: 2.5rem;
   padding: 0.45rem 0.8rem;
   color: var(--accent-dark);
   background: #fff;
