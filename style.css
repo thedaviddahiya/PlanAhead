@@ -207,6 +207,17 @@ legend {
   list-style: none;
 }
 
+.option-group-heading {
+  margin: 1rem 0 0.1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.option-group-heading:first-child {
+  margin-top: 0;
+}
+
 .option-chip {
   display: flex;
   align-items: center;

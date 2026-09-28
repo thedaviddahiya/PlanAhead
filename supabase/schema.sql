@@ -8,9 +8,10 @@ create table public.polls (
   description text check (description is null or char_length(description) <= 2000),
   options jsonb not null default '[]' check (
     jsonb_typeof(options) = 'array'
+    and jsonb_array_length(options) > 0
     and not jsonb_path_exists(
       options,
-      '$[*] ? (@.type() != "object" || !exists(@.date) || @.date.type() != "string")'
+      '$[*] ? (@.type() != "object" || !exists(@.date) || @.date.type() != "string" || !(@.date like_regex "^[0-9]{4}-[0-9]{2}-[0-9]{2}$") || (exists(@.time) && @.time.type() != "null" && (@.time.type() != "string" || !(@.time like_regex "^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"))))'
     )
   ),
   created_at timestamptz default now()
@@ -33,14 +34,28 @@ alter table public.responses enable row level security;
 create policy polls_select_anon on public.polls
   for select to anon using (true);
 
+create policy polls_select_authenticated on public.polls
+  for select to authenticated using (true);
+
 create policy polls_insert_anon on public.polls
   for insert to anon with check (true);
+
+create policy polls_insert_authenticated on public.polls
+  for insert to authenticated with check (true);
 
 create policy responses_select_anon on public.responses
   for select to anon using (true);
 
+create policy responses_select_authenticated on public.responses
+  for select to authenticated using (true);
+
 create policy responses_insert_anon on public.responses
   for insert to anon with check (
+    exists (select 1 from public.polls p where p.id = poll_id)
+  );
+
+create policy responses_insert_authenticated on public.responses
+  for insert to authenticated with check (
     exists (select 1 from public.polls p where p.id = poll_id)
   );
 

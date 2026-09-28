@@ -88,12 +88,14 @@ test('validateResponseInput requires a name and a selection', () => {
 test('formatOption renders fixed UTC calendar dates without shifting them', () => {
   assert.equal(formatOption({ date: '2026-09-28', time: '18:00' }), 'Mon, 28 Sep 2026 · 18:00');
   assert.equal(formatOption({ date: '2026-09-28', time: null }), 'Mon, 28 Sep 2026');
-  assert.equal(formatOption({ date: 'bad', time: '18:00' }), '18:00');
+  assert.equal(formatOption({ date: 'legacy-value', time: null }), 'legacy-value');
+  assert.equal(formatOption({ date: 'legacy-value', time: '18:00' }), 'legacy-value · 18:00');
+  assert.equal(formatOption({ date: '', time: '18:00' }), '18:00');
   assert.equal(formatOption({ date: null, time: '09:30' }), '09:30');
   assert.equal(formatOption(null), 'Option');
 });
 
-test('buildViewModel counts valid selections and ignores out-of-bounds values', () => {
+test('buildViewModel counts valid selections once and ignores out-of-bounds values', () => {
   const options = [validOption, { date: '2026-09-30', time: null, label: null }];
   const responses = [
     { name: 'Ana', selected: [0, 99], created_at: '2026-01-02' },
@@ -107,6 +109,15 @@ test('buildViewModel counts valid selections and ignores out-of-bounds values', 
   assert.deepEqual(model.rows[1].voters, ['Bo']);
   assert.deepEqual(model.names, ['Ana', 'Bo', 'Cy']);
   assert.equal(model.maxCount, 2);
+});
+
+test('buildViewModel deduplicates repeated selected indexes per response', () => {
+  const model = buildViewModel([validOption], [
+    { name: 'Ana', selected: [0, 0], created_at: '2026-01-02' },
+  ]);
+
+  assert.equal(model.rows[0].count, 1);
+  assert.deepEqual(model.rows[0].voters, ['Ana']);
 });
 
 test('buildViewModel keeps duplicate names and tolerates malformed options', () => {

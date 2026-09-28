@@ -37,16 +37,30 @@ function showError(messages) {
 
 function renderOptions(options) {
   optionsList.replaceChildren();
+  const groups = new Map();
   options.forEach((option, index) => {
-    const label = document.createElement('label');
-    label.className = 'response-option';
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.name = 'selected';
-    checkbox.value = String(index);
-    label.append(checkbox, document.createTextNode(formatOption(option)));
-    optionsList.append(label);
+    const date = typeof option?.date === 'string' && option.date.trim() ? option.date : null;
+    const key = date ?? '__ungrouped__';
+    if (!groups.has(key)) groups.set(key, { date, entries: [] });
+    groups.get(key).entries.push({ option, index });
   });
+
+  for (const { date, entries } of groups.values()) {
+    const heading = document.createElement('h3');
+    heading.className = 'option-group-heading';
+    heading.textContent = date ? formatOption({ date, time: null }) : 'Ungrouped';
+    optionsList.append(heading);
+    entries.forEach(({ option, index }) => {
+      const label = document.createElement('label');
+      label.className = 'response-option';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'selected';
+      checkbox.value = String(index);
+      label.append(checkbox, document.createTextNode(formatOption(option)));
+      optionsList.append(label);
+    });
+  }
 }
 
 function renderResults(model, responses) {

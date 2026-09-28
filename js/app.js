@@ -92,6 +92,8 @@ export function formatOption(option) {
     const [year, month, day] = dateValue.split('-').map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
     dateText = `${WEEKDAYS[date.getUTCDay()]}, ${day} ${MONTHS[month - 1]} ${year}`;
+  } else if (typeof dateValue === 'string' && dateValue.trim()) {
+    dateText = dateValue.trim();
   }
   const timeText = isValidTimeFormat(timeValue) ? timeValue : '';
   if (dateText && timeText) return `${dateText} · ${timeText}`;
@@ -122,7 +124,7 @@ export function buildViewModel(options, responses) {
 
   for (const [responseIndex, response] of orderedResponses.entries()) {
     if (!Array.isArray(response?.selected)) continue;
-    for (const selected of response.selected) {
+    for (const selected of new Set(response.selected)) {
       if (!Number.isInteger(selected) || selected < 0 || selected >= rows.length) continue;
       rows[selected].count += 1;
       rows[selected].voters.push(names[responseIndex]);
