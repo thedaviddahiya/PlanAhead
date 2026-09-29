@@ -28,8 +28,14 @@ create table public.responses (
 
 create index responses_poll_id_idx on public.responses(poll_id);
 
+create table public.app_config (
+  key text primary key,
+  value text not null
+);
+
 alter table public.polls enable row level security;
 alter table public.responses enable row level security;
+alter table public.app_config enable row level security;
 
 create policy polls_select_anon on public.polls
   for select to anon using (true);
@@ -37,8 +43,31 @@ create policy polls_select_anon on public.polls
 create policy polls_select_authenticated on public.polls
   for select to authenticated using (true);
 
-create policy polls_insert_anon on public.polls
-  for insert to anon with check (true);
+create policy app_config_select_anon on public.app_config
+  for select to anon using (true);
+
+create or replace function public.creation_password_matches(candidate text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select candidate is not null
+    and candidate <> ''
+    and exists (
+      select 1
+      from public.app_config
+      where key = 'creation_password_hash'
+        and crypt(candidate, value) = value
+    );
+$$;
+
+grant execute on function public.creation_password_matches(text) to anon;
+
+create policy "password holders can create polls" on public.polls
+  for insert to anon
+  with check (creation_password_matches(current_setting('request.headers', true)::json->>'x-planahead-password'));
 
 create policy polls_insert_authenticated on public.polls
   for insert to authenticated with check (true);

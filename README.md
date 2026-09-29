@@ -5,9 +5,22 @@ PlanAhead is a small, Doodle-style availability poll. Create a poll with a title
 ## Setup
 
 1. Create a project at [Supabase](https://supabase.com/).
-2. In the Supabase dashboard, open **SQL Editor**, create a new query, paste in [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates the `polls` and `responses` tables, their `poll_id` index, and the required anonymous RLS policies.
-3. Realtime is added by the schema with `alter publication supabase_realtime add table public.responses`. Verify it in **Database → Realtime** and confirm that `responses` is enabled. Poll changes are not subscribed to; response inserts are.
-4. Open [`js/config.js`](js/config.js) and replace the placeholder values with your project URL and anon key:
+2. In the Supabase dashboard, open **SQL Editor**, create a new query, paste in [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates the `polls`, `responses`, and `app_config` tables, their indexes, and the required anonymous RLS policies.
+3. Set the creation password the first time by running:
+
+   ```sql
+   insert into app_config (key, value) values ('creation_password_hash', crypt('NEW-PASSWORD', gen_salt('bf', 10)));
+   ```
+
+   To change it later, run:
+
+   ```sql
+   update app_config set value = crypt('NEW-PASSWORD', gen_salt('bf', 10)) where key = 'creation_password_hash';
+   ```
+
+   Creation fails for everyone until a password is set.
+4. Realtime is added by the schema with `alter publication supabase_realtime add table public.responses`. Verify it in **Database → Realtime** and confirm that `responses` is enabled. Poll changes are not subscribed to; response inserts are.
+5. Open [`js/config.js`](js/config.js) and replace the placeholder values with your project URL and anon key:
 
    ```js
    window.PLANAHEAD_CONFIG = {
@@ -17,8 +30,8 @@ PlanAhead is a small, Doodle-style availability poll. Create a poll with a title
    ```
 
    The anon key is intended for browser use. Do not put a Supabase service-role key in this file. Replace this file's placeholder values before deploying.
-5. Push the repository to GitHub, then open **Settings → Pages**. Deploy from branch `main` and folder `/ (root)`.
-6. Share links point at the respond page: with a repository named `availability-poll`, a share link looks like `https://username.github.io/availability-poll/poll.html?poll=abc12345`, where the poll ID is exactly 8 characters. Home-page links of the form `https://username.github.io/availability-poll/?poll=abc12345` redirect to the respond page automatically. If the repository is named differently, use that name in the path.
+6. Push the repository to GitHub, then open **Settings → Pages**. Deploy from branch `main` and folder `/ (root)`.
+7. Share links point at the respond page: with a repository named `availability-poll`, a share link looks like `https://username.github.io/availability-poll/poll.html?poll=abc12345`, where the poll ID is exactly 8 characters. Home-page links of the form `https://username.github.io/availability-poll/?poll=abc12345` redirect to the respond page automatically. If the repository is named differently, use that name in the path.
 
 The schema intentionally permits anonymous clients to select polls and responses, insert polls, and insert responses for an existing poll. It does not permit anonymous updates or deletes. Responses must contain at least one selected option, and the database validates poll ID, title, description, option shape, and response name lengths.
 
