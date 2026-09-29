@@ -1,6 +1,7 @@
 import {
   buildOptionsFromDays,
   buildShareLink,
+  dayAvailabilityLabel,
   formatOption,
   generatePollId,
   getClient,
@@ -47,7 +48,9 @@ function renderSummary() {
     const item = document.createElement('li');
     item.className = 'option-chip';
     const text = document.createElement('span');
-    text.textContent = formatOption(option);
+    text.textContent = option.time === null
+      ? `${formatOption(option)} · ${dayAvailabilityLabel(null)}`
+      : formatOption(option);
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.textContent = 'Remove';

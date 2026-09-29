@@ -160,7 +160,13 @@ export function buildOptionsFromDays(days) {
   const entries = [];
   for (const day of Array.isArray(days) ? days : []) {
     const date = typeof day?.date === 'string' ? day.date : '';
-    for (const time of Array.isArray(day?.times) ? day.times : []) {
+    const times = day?.times;
+    if (!Array.isArray(times)) continue;
+    if (times.length === 0) {
+      entries.push({ date, time: null, label: null });
+      continue;
+    }
+    for (const time of times) {
       entries.push({ date, time, label: null });
     }
   }

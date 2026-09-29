@@ -98,19 +98,20 @@ export function createCalendar({
     for (let day = 1; day <= daysInMonth; day += 1) {
       const dateIso = isoOf(new Date(Date.UTC(viewYear, viewMonth, day)));
       const slots = slotsFor(dateIso);
+      const hasDay = daySlots.has(dateIso);
       const cell = document.createElement('button');
       cell.type = 'button';
       cell.className = 'cal-day';
       cell.dataset.date = dateIso;
-      if (slots.length > 0) cell.classList.add('filled');
+      if (hasDay) cell.classList.add('filled');
       cell.textContent = String(day);
       cell.setAttribute('aria-label',
         `Add times for ${MONTH_NAMES[viewMonth]} ${day}` +
-        (slots.length > 0 ? ` (${slots.length} chosen)` : ''));
-      if (slots.length > 0) {
+        (slots.length > 0 ? ` (${slots.length} chosen)` : (hasDay ? ' (day only)' : '')));
+      if (hasDay) {
         const dots = document.createElement('span');
         dots.className = 'cal-dots';
-        for (let index = 0; index < Math.min(slots.length, MAX_DOTS); index += 1) {
+        for (let index = 0; index < Math.min(Math.max(slots.length, 1), MAX_DOTS); index += 1) {
           const dot = document.createElement('span');
           dot.className = 'cal-dot';
           dots.append(dot);
@@ -272,7 +273,13 @@ export function createCalendar({
     notifyChange();
   });
 
-  doneEl.addEventListener('click', closePopover);
+  doneEl.addEventListener('click', () => {
+    if (!popoverDate) return;
+    if (slotsFor(popoverDate).length === 0) daySlots.set(popoverDate, []);
+    renderCalendar();
+    notifyChange();
+    closePopover();
+  });
   backdropEl.addEventListener('click', closePopover);
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !popoverEl.hidden) closePopover();

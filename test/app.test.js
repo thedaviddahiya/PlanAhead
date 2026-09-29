@@ -220,6 +220,14 @@ test('buildOptionsFromDays flattens day selections chronologically', () => {
   ]);
 });
 
+test('buildOptionsFromDays preserves empty day selections as day-only options', () => {
+  assert.deepEqual(buildOptionsFromDays([
+    { date: '2026-09-29', times: [] },
+  ]), [
+    { date: '2026-09-29', time: null, label: null },
+  ]);
+});
+
 test('buildViewModel rows carry the raw option for heatmap grouping', () => {
   const model = buildViewModel([validOption], []);
   assert.deepEqual(model.rows[0].raw, validOption);

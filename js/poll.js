@@ -398,7 +398,9 @@ responseForm.addEventListener('submit', async (event) => {
       selected,
     });
     if (error) throw error;
-    respondPanel.hidden = true;
+    nameInput.hidden = true;
+    responseForm.querySelector('label[for="name-input"]').hidden = true;
+    submitButton.hidden = true;
     thankyouPanel.hidden = false;
     await refreshResults();
   } catch (error) {
