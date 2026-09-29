@@ -5,15 +5,14 @@ import {
   buildHeatmap,
   buildViewModel,
   dayAvailabilityLabel,
-  formatOption,
   getClient,
   isValidDateFormat,
+  selectedIndexesFromDays,
   validateResponseInput,
 } from './app.js';
 import { createCalendar } from './calendar.js';
 
 const WEEKDAYS_MIN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const DAY_ONLY_SLOT = '09:00–17:00';
 
 const pollId = new URLSearchParams(location.search).get('poll');
 const validPollId = /^[23456789a-hjkmnp-z]{8}$/.test(pollId ?? '');
@@ -57,8 +56,7 @@ function dateFromCalendarCell(cell) {
   return cell.dataset.date || null;
 }
 
-function renderLegend(names) {
-  tileLegend.replaceChildren();
+function renderLegend(names) {  tileLegend.replaceChildren();
   const colors = assignTileColors(names);
   for (const [name, color] of colors) {
     const item = document.createElement('li');
@@ -107,7 +105,13 @@ function renderTiles(model) {
   renderLegend(model.names);
 }
 
+let selectedDate = null;
+
 function renderDayReadout(date) {
+  if (!date) {
+    dayReadout.replaceChildren();
+    return;
+  }
   dayReadout.replaceChildren();
   const options = optionsForDay(date);
   if (options.length === 0) return;
@@ -124,61 +128,9 @@ function renderDayReadout(date) {
     const people = document.createElement('span');
     people.textContent = names.length ? names.join(', ') : 'No responses yet';
     row.append(label, people);
-    byTime.set(time ?? DAY_ONLY_SLOT, row);
+    byTime.set(String(time), row);
   }
   for (const row of byTime.values()) dayReadout.append(row);
-}
-
-function renderDayOnlyChoice(date) {
-  const chosenList = document.querySelector('#day-chosen');
-  const item = document.createElement('li');
-  const chip = document.createElement('span');
-  chip.className = 'chosen-chip';
-  chip.textContent = DAY_ONLY_SLOT;
-  const remove = document.createElement('button');
-  remove.type = 'button';
-  remove.textContent = '✕';
-  remove.setAttribute('aria-label', `Remove ${DAY_ONLY_SLOT}`);
-  remove.addEventListener('click', () => {
-    calendar.daySlots.delete(date);
-    calendar.renderCalendar();
-    chosenList.replaceChildren();
-    renderTiles(currentModel ?? buildViewModel(poll.options, []));
-    renderDayReadout(date);
-    renderDayOnlyChoiceIfSelected(date);
-  });
-  chip.append(remove);
-  item.append(chip);
-  chosenList.append(item);
-}
-
-function renderDayOnlyChoiceIfSelected(date) {
-  if ((calendar.daySlots.get(date) ?? []).includes(DAY_ONLY_SLOT)) renderDayOnlyChoice(date);
-}
-
-function toggleDayOnly(date) {
-  const options = optionsForDay(date);
-  if (options.length !== 1 || options[0].time !== null) return;
-  const slots = calendar.daySlots.get(date) ?? [];
-  if (slots.includes(DAY_ONLY_SLOT)) calendar.daySlots.delete(date);
-  else calendar.daySlots.set(date, [DAY_ONLY_SLOT]);
-  calendar.renderCalendar();
-  document.querySelector('#day-chosen').replaceChildren();
-  renderTiles(currentModel ?? buildViewModel(poll.options, []));
-  renderDayReadout(date);
-  if (calendar.daySlots.has(date)) renderDayOnlyChoice(date);
-}
-
-function selectedOptionIndexes() {
-  const indexes = [];
-  for (const [date, slots] of calendar.daySlots) {
-    for (const slot of slots) {
-      const index = poll.options.findIndex((option) => option.date === date
-        && (option.time === null ? slot === DAY_ONLY_SLOT : option.time === slot));
-      if (index >= 0 && !indexes.includes(index)) indexes.push(index);
-    }
-  }
-  return indexes.sort((a, b) => a - b);
 }
 
 function heatLevel(count, maxCount) {
@@ -268,27 +220,24 @@ calendar = createCalendar({
   monthEl: document.querySelector('#cal-month'),
   prevEl: document.querySelector('#cal-prev'),
   nextEl: document.querySelector('#cal-next'),
-  popoverEl: document.querySelector('#day-popover'),
-  backdropEl: document.querySelector('#popover-backdrop'),
-  popoverTitleEl: document.querySelector('#popover-title'),
-  slotChipsEl: document.querySelector('#slot-chips'),
-  exactInputEl: document.querySelector('#exact-time'),
-  addExactEl: document.querySelector('#add-exact'),
-  rangeStartEl: document.querySelector('#range-start'),
-  rangeEndEl: document.querySelector('#range-end'),
-  addRangeEl: document.querySelector('#add-range'),
-  popoverErrorEl: document.querySelector('#popover-error'),
-  chosenListEl: document.querySelector('#day-chosen'),
+  rulerPanelEl: document.querySelector('#ruler-panel'),
+  rulerTitleEl: document.querySelector('#ruler-title'),
+  allDayEl: document.querySelector('#all-day'),
+  rulerBlocksEl: document.querySelector('#ruler-blocks'),
+  rulerExtrasEl: document.querySelector('#ruler-extras'),
   clearEl: document.querySelector('#clear-day'),
-  doneEl: document.querySelector('#done-day'),
   editorMode: 'offered-only',
-  slotsForDate: (date) => optionsForDay(date)
-    .filter((option) => option.time !== null)
-    .map((option) => option.time),
+  slotsForDate: (date) => ({
+    times: optionsForDay(date)
+      .filter((option) => option.time !== null)
+      .map((option) => option.time),
+    dayOnly: optionsForDay(date).some((option) => option.time === null),
+  }),
 });
 
 calendar.onChange(() => {
   if (currentModel) renderTiles(currentModel);
+  renderDayReadout(selectedDate);
 });
 
 document.querySelector('#cal-prev').addEventListener('click', () => {
@@ -303,16 +252,9 @@ document.querySelector('#cal-grid').addEventListener('click', (event) => {
   const cell = event.target.closest('.cal-day:not(.dim)');
   if (!cell) return;
   const date = dateFromCalendarCell(cell);
-  if (date) {
-    toggleDayOnly(date);
-    renderDayReadout(date);
-  }
-});
-
-document.querySelector('#day-popover').addEventListener('click', () => {
-  const date = document.querySelector('#popover-title').textContent;
-  const option = poll?.options?.find((entry) => formatOption({ date: entry.date, time: null }) === date);
-  if (option) renderDayReadout(option.date);
+  if (!date) return;
+  selectedDate = date;
+  renderDayReadout(date);
 });
 
 let client;
@@ -382,7 +324,7 @@ async function loadPoll() {
 
 responseForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const selected = selectedOptionIndexes();
+  const selected = selectedIndexesFromDays(poll.options, calendar.daySlots);
   const errors = validateResponseInput(nameInput.value, selected.length);
   if (errors.length > 0) {
     showError(errors);

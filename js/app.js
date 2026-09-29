@@ -139,21 +139,59 @@ export function buildShareLink(pollId) {
   return new URL(`poll.html?poll=${encodeURIComponent(pollId)}`, location.href).href;
 }
 
-export function expandTimeRange(start, end) {
-  if (!isValidTimeFormat(start) || !isValidTimeFormat(end)) return null;
-  const toMinutes = (value) => {
-    const [hours, minutes] = value.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
-  const from = toMinutes(start);
-  const to = toMinutes(end);
-  if (to < from) return null;
+const RULER_START = 9 * 60;
+const RULER_END = 21 * 60;
+
+export function rulerSlots() {
   const slots = [];
-  for (let minutes = from; minutes <= to; minutes += 30) {
+  for (let minutes = RULER_START; minutes < RULER_END; minutes += 30) {
     const hours = Math.floor(minutes / 60);
     slots.push(`${String(hours).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`);
   }
   return slots;
+}
+
+export function isRulerSlot(value) {
+  if (!isValidTimeFormat(value)) return false;
+  const [hours, minutes] = value.split(':').map(Number);
+  const total = hours * 60 + minutes;
+  return total >= RULER_START && total < RULER_END && minutes % 30 === 0;
+}
+
+export function legacyExtraTimes(options) {
+  const extras = new Set();
+  for (const option of Array.isArray(options) ? options : []) {
+    const time = option?.time;
+    if (time !== null && time !== undefined && !isRulerSlot(time)) extras.add(String(time));
+  }
+  return [...extras].sort();
+}
+
+export function offeredTimes(options) {
+  const offered = new Set();
+  for (const option of Array.isArray(options) ? options : []) {
+    if (isRulerSlot(option?.time)) offered.add(option.time);
+  }
+  return rulerSlots().filter((slot) => offered.has(slot));
+}
+
+export const DAY_ONLY_SLOT = '09:00–17:00';
+
+export function selectedIndexesFromDays(options, daySlots) {
+  const optionList = Array.isArray(options) ? options : [];
+  const indexes = [];
+  const slots = daySlots instanceof Map ? daySlots : new Map();
+  for (const [date, times] of slots) {
+    const isDayOnly = Array.isArray(times) && times.length === 0;
+    for (const slot of isDayOnly ? [null] : times) {
+      const index = optionList.findIndex((option) => option?.date === date
+        && (option.time === null || option.time === undefined
+          ? isDayOnly
+          : !isDayOnly && option.time === slot));
+      if (index >= 0 && !indexes.includes(index)) indexes.push(index);
+    }
+  }
+  return indexes.sort((a, b) => a - b);
 }
 
 export function buildOptionsFromDays(days) {

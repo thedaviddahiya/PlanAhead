@@ -31,6 +31,9 @@
         <label for="description">Description <span>(optional)</span></label>
         <textarea id="description" name="description" maxlength="2000" rows="3"></textarea>
 
+        <label for="creator-name">Your name <span>(joins the poll with your own availability)</span></label>
+        <input id="creator-name" name="creator-name" type="text" maxlength="80" autocomplete="name">
+
         <label for="create-password">Creation password</label>
         <input id="create-password" name="create-password" type="password" autocomplete="off" required>
 
@@ -44,28 +47,20 @@
             </div>
             <div class="cal-grid" id="cal-grid"></div>
           </div>
-          <div id="day-popover" class="day-popover" hidden tabindex="-1">
-            <div class="popover-title" id="popover-title"></div>
-            <div class="slot-chips" id="slot-chips"></div>
-            <div class="custom-row">
-              <input id="exact-time" type="time" aria-label="Exact time">
-              <button type="button" id="add-exact">Add time</button>
+          <div class="ruler-panel" id="ruler-panel">
+            <div class="ruler-head">
+              <span id="ruler-title" aria-live="polite"></span>
+              <button type="button" id="clear-day" hidden>Clear day</button>
             </div>
-            <div class="custom-row">
-              <input id="range-start" type="time" aria-label="Range start">
-              <span class="range-dash">–</span>
-              <input id="range-end" type="time" aria-label="Range end">
-              <button type="button" id="add-range">Add range</button>
+            <div class="ruler-all-day" hidden>
+              <button type="button" id="all-day" class="all-day-block" aria-pressed="false">All day 09:00–17:00</button>
             </div>
-            <div class="popover-error" id="popover-error" role="alert" aria-live="polite"></div>
-            <ul id="day-chosen" class="chosen-list"></ul>
-            <div class="popover-actions">
-              <button type="button" id="clear-day">Clear day</button>
-              <button type="button" id="done-day">Done</button>
+            <div class="ruler-blocks" id="ruler-blocks"></div>
+            <div class="ruler-ticks" aria-hidden="true">
+              <span>09:00</span><span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span>
             </div>
+            <div class="slot-chips" id="ruler-extras" hidden></div>
           </div>
-          <div class="popover-backdrop" id="popover-backdrop" hidden></div>
-          <ul id="options-list" aria-live="polite"></ul>
         </fieldset>
 
         <div id="create-error" class="error" role="alert" aria-live="polite"></div>

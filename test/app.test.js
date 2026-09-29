@@ -9,7 +9,6 @@ import {
   buildViewModel,
   assignTileColors,
   dayAvailabilityLabel,
-  expandTimeRange,
   findDuplicateKeys,
   formatOption,
   generatePollId,
@@ -17,9 +16,14 @@ import {
   getClientWithPassword,
   isValidDateFormat,
   isValidTimeFormat,
+  isRulerSlot,
+  legacyExtraTimes,
   mapCreationError,
   normalizeOptions,
+  offeredTimes,
   PERSON_COLORS,
+  rulerSlots,
+  selectedIndexesFromDays,
   validatePollInput,
   validateResponseInput,
 } from '../js/app.js';
@@ -199,16 +203,6 @@ test('getClient handles missing, placeholder, and valid Supabase configuration',
   assert.equal(getClient(), client);
 });
 
-test('expandTimeRange expands inclusive 30-minute slots and rejects invalid ranges', () => {
-  assert.deepEqual(
-    expandTimeRange('17:30', '20:30'),
-    ['17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30']
-  );
-  assert.deepEqual(expandTimeRange('17:45', '18:15'), ['17:45', '18:15']);
-  assert.equal(expandTimeRange('18:00', '17:00'), null);
-  assert.equal(expandTimeRange('bad', '18:00'), null);
-});
-
 test('buildOptionsFromDays flattens day selections chronologically', () => {
   const days = [
     { date: '2026-09-30', times: ['19:00'] },
@@ -323,4 +317,66 @@ test('getClientWithPassword passes the password as a global client header', () =
   assert.equal(created.options?.global?.headers['x-planahead-password'], 'let-me-in');
   assert.equal(getClientWithPassword(''), null);
   assert.equal(getClientWithPassword(null), null);
+});
+
+test('rulerSlots lists every 30-minute block from 09:00 to 20:30', () => {
+  const slots = rulerSlots();
+  assert.equal(slots.length, 24);
+  assert.equal(slots[0], '09:00');
+  assert.equal(slots[1], '09:30');
+  assert.equal(slots[11], '14:30');
+  assert.equal(slots[12], '15:00');
+  assert.equal(slots[23], '20:30');
+});
+
+test('isRulerSlot accepts only on-grid times', () => {
+  assert.equal(isRulerSlot('09:00'), true);
+  assert.equal(isRulerSlot('18:30'), true);
+  assert.equal(isRulerSlot('20:30'), true);
+  assert.equal(isRulerSlot('08:30'), false);
+  assert.equal(isRulerSlot('21:00'), false);
+  assert.equal(isRulerSlot('18:15'), false);
+  assert.equal(isRulerSlot('junk'), false);
+});
+
+test('legacyExtraTimes extracts off-grid offered times uniquely and sorted', () => {
+  const options = [
+    { date: '2026-09-28', time: '18:00', label: null },
+    { date: '2026-09-28', time: '07:15', label: null },
+    { date: '2026-09-29', time: '07:15', label: null },
+    { date: '2026-09-29', time: '22:00', label: null },
+    { date: '2026-09-30', time: null, label: null },
+  ];
+  assert.deepEqual(legacyExtraTimes(options), ['07:15', '22:00']);
+});
+
+test('offeredTimes returns unique on-grid offered times in ruler order', () => {
+  const options = [
+    { date: '2026-09-28', time: '19:00', label: null },
+    { date: '2026-09-28', time: '18:00', label: null },
+    { date: '2026-09-29', time: '19:00', label: null },
+    { date: '2026-09-29', time: null, label: null },
+    { date: '2026-09-30', time: '21:00', label: null },
+  ];
+  assert.deepEqual(offeredTimes(options), ['18:00', '19:00']);
+});
+
+test('selectedIndexesFromDays maps daySlots to option indexes; empty array is day-only', () => {
+  const options = [
+    { date: '2026-09-28', time: '18:00', label: null },
+    { date: '2026-09-28', time: '19:00', label: null },
+    { date: '2026-09-29', time: null, label: null },
+    { date: '2026-09-30', time: '18:00', label: null },
+  ];
+  const daySlots = new Map([
+    ['2026-09-28', ['19:00', '18:00']],
+    ['2026-09-29', []],
+    ['2026-09-30', []],
+  ]);
+  assert.deepEqual(selectedIndexesFromDays(options, daySlots), [0, 1, 2]);
+  assert.deepEqual(selectedIndexesFromDays(options, new Map()), []);
+});
+
+test('dayAvailabilityLabel matches the day-only pseudo-slot label', () => {
+  assert.equal(dayAvailabilityLabel(null), '09:00–17:00');
 });

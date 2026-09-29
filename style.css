@@ -285,6 +285,11 @@ legend {
   border-color: var(--accent);
 }
 
+.cal-day.selected {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 1px;
+}
+
 .cal-dots {
   display: flex;
   gap: 0.2rem;
@@ -343,24 +348,99 @@ legend {
 }
 
 /* ------------------------------------------------------------
-   Day popover
+   Time ruler (create + respond pages)
    ------------------------------------------------------------ */
-.day-popover {
-  position: fixed;
-  z-index: 20;
-  width: min(19rem, calc(100vw - 1.5rem));
-  padding: 1rem;
+.ruler-panel {
+  margin-top: 0.9rem;
+  padding: 0.9rem;
   border: 1px solid var(--line);
   border-radius: 0.9rem;
   background: var(--surface);
-  box-shadow: 0 1rem 2.5rem rgb(63 51 22 / 25%);
 }
 
-.popover-title {
-  margin-bottom: 0.6rem;
+.ruler-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+  min-height: 2rem;
+}
+
+#ruler-title {
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.ruler-all-day {
+  margin-bottom: 0.55rem;
+}
+
+.all-day-block {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 0.55rem;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  font-weight: 650;
+  font-size: 0.9rem;
+}
+
+.all-day-block.on {
+  border-color: var(--accent);
+  border-style: solid;
+  color: #fff;
+  background: var(--accent);
+}
+
+.all-day-block:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ruler-blocks {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.ruler-block {
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.4rem;
+  background: #fff;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.ruler-block:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.ruler-block.on {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.ruler-block.off {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ruler-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .day-readout {
@@ -369,6 +449,10 @@ legend {
   margin-top: 0.7rem;
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.day-readout:empty {
+  margin-top: 0;
 }
 
 .day-readout-row {
@@ -410,130 +494,19 @@ legend {
   background: var(--accent);
 }
 
-.slot-chip.other {
-  border-style: dashed;
-  color: var(--muted);
-}
-
-.custom-row {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-top: 0.55rem;
-}
-
-.custom-row input {
-  width: auto;
-  min-height: 2.5rem;
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0.35rem 0.5rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.custom-row button {
-  min-height: 2.5rem;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.88rem;
-}
-
-.range-dash {
-  color: var(--muted);
-}
-
-.popover-error {
-  min-height: 1.2rem;
-  margin: 0.35rem 0 0;
-  color: var(--danger);
-  font-size: 0.85rem;
-}
-
-.chosen-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.6rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.chosen-list:empty {
-  margin: 0;
-}
-
-.chosen-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.3rem 0.35rem 0.3rem 0.7rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-deep);
-  font-weight: 650;
-  font-size: 0.88rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.chosen-chip button {
-  min-height: 1.9rem;
-  min-width: 1.9rem;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  color: var(--accent-deep);
-  background: transparent;
-  font-size: 1rem;
-}
-
-.chosen-chip button:hover {
-  color: #fff;
-  background: var(--accent-deep);
-}
-
-.popover-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: 0.8rem;
-  padding-top: 0.7rem;
-  border-top: 1px solid var(--line);
-}
-
-.popover-actions button {
-  min-height: 2.5rem;
-  padding: 0.35rem 0.85rem;
-}
-
 #clear-day {
+  min-height: 2.5rem;
+  padding: 0.25rem 0.6rem;
   border-color: transparent;
   color: var(--muted);
   background: transparent;
+  font-size: 0.85rem;
 }
 
 #clear-day:hover {
   border-color: var(--line-strong);
   color: var(--danger);
   background: #fff;
-}
-
-.popover-backdrop {
-  position: fixed;
-  z-index: 15;
-  inset: 0;
-  background: rgb(43 37 28 / 35%);
-}
-
-@media (max-width: 640px) {
-  .day-popover {
-    top: auto !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100%;
-    border-radius: 1rem 1rem 0 0;
-    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-  }
 }
 
 /* ------------------------------------------------------------

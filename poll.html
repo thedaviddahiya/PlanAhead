@@ -46,28 +46,21 @@
             <div class="cal-grid" id="cal-grid"></div>
           </div>
           <ul id="tile-legend" class="tile-legend" aria-label="Respondents"></ul>
-          <div id="day-popover" class="day-popover" hidden tabindex="-1">
-            <div class="popover-title" id="popover-title"></div>
-            <div class="slot-chips" id="slot-chips"></div>
+          <div class="ruler-panel" id="ruler-panel">
+            <div class="ruler-head">
+              <span id="ruler-title" aria-live="polite"></span>
+              <button type="button" id="clear-day" hidden>Clear day</button>
+            </div>
+            <div class="ruler-all-day" hidden>
+              <button type="button" id="all-day" class="all-day-block" aria-pressed="false">All day 09:00–17:00</button>
+            </div>
+            <div class="ruler-blocks" id="ruler-blocks"></div>
+            <div class="ruler-ticks" aria-hidden="true">
+              <span>09:00</span><span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span>
+            </div>
+            <div class="slot-chips" id="ruler-extras" hidden></div>
             <div id="day-readout" class="day-readout" aria-live="polite"></div>
-            <div class="custom-row">
-              <input id="exact-time" type="time" aria-label="Exact time">
-              <button type="button" id="add-exact">Add time</button>
-            </div>
-            <div class="custom-row">
-              <input id="range-start" type="time" aria-label="Range start">
-              <span class="range-dash">–</span>
-              <input id="range-end" type="time" aria-label="Range end">
-              <button type="button" id="add-range">Add range</button>
-            </div>
-            <div class="popover-error" id="popover-error" role="alert" aria-live="polite"></div>
-            <ul id="day-chosen" class="chosen-list"></ul>
-            <div class="popover-actions">
-              <button type="button" id="clear-day">Clear day</button>
-              <button type="button" id="done-day">Done</button>
-            </div>
           </div>
-          <div class="popover-backdrop" id="popover-backdrop" hidden></div>
         </fieldset>
         <div id="respond-error" class="error" role="alert" aria-live="polite"></div>
         <button id="submit-response" type="submit">Submit availability</button>
