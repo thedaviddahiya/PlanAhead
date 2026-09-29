@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildHeatmap,
+  buildOptionsFromDays,
   buildShareLink,
   buildViewModel,
+  expandTimeRange,
   findDuplicateKeys,
   formatOption,
   generatePollId,
@@ -165,4 +168,55 @@ test('getClient handles missing, placeholder, and valid Supabase configuration',
   assert.equal(typeof client.from, 'function');
   assert.deepEqual(received, ['https://db.example', 'secret']);
   assert.equal(getClient(), client);
+});
+
+test('expandTimeRange expands inclusive 30-minute slots and rejects invalid ranges', () => {
+  assert.deepEqual(
+    expandTimeRange('17:30', '20:30'),
+    ['17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30']
+  );
+  assert.deepEqual(expandTimeRange('17:45', '18:15'), ['17:45', '18:15']);
+  assert.equal(expandTimeRange('18:00', '17:00'), null);
+  assert.equal(expandTimeRange('bad', '18:00'), null);
+});
+
+test('buildOptionsFromDays flattens day selections chronologically', () => {
+  const days = [
+    { date: '2026-09-30', times: ['19:00'] },
+    { date: '2026-09-28', times: ['19:00', '18:00'] },
+  ];
+  assert.deepEqual(buildOptionsFromDays(days), [
+    { date: '2026-09-28', time: '18:00', label: null },
+    { date: '2026-09-28', time: '19:00', label: null },
+    { date: '2026-09-30', time: '19:00', label: null },
+  ]);
+});
+
+test('buildViewModel rows carry the raw option for heatmap grouping', () => {
+  const model = buildViewModel([validOption], []);
+  assert.deepEqual(model.rows[0].raw, validOption);
+});
+
+test('buildHeatmap arranges dates as columns and times as rows', () => {
+  const options = [
+    { date: '2026-09-28', time: '18:00', label: null },
+    { date: '2026-09-28', time: '19:00', label: null },
+    { date: '2026-09-29', time: '18:00', label: null },
+    { date: '2026-09-29', time: null, label: null },
+  ];
+  const responses = [
+    { name: 'Ana', selected: [0, 2], created_at: '2026-01-01' },
+    { name: 'Ben', selected: [0, 1], created_at: '2026-01-02' },
+  ];
+  const heat = buildHeatmap(buildViewModel(options, responses));
+  assert.deepEqual(heat.times, ['18:00', '19:00', null]);
+  assert.equal(heat.columns.length, 2);
+  assert.equal(heat.columns[0].date, '2026-09-28');
+  assert.deepEqual(heat.columns[0].cells[0], { count: 2, voters: ['Ana', 'Ben'], best: true });
+  assert.deepEqual(heat.columns[0].cells[1], { count: 1, voters: ['Ben'], best: false });
+  assert.equal(heat.columns[0].cells[2], null);
+  assert.deepEqual(heat.columns[1].cells[0], { count: 1, voters: ['Ana'], best: false });
+  assert.equal(heat.columns[1].cells[1], null);
+  assert.deepEqual(heat.columns[1].cells[2], { count: 0, voters: [], best: false });
+  assert.equal(heat.maxCount, 2);
 });

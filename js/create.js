@@ -1,7 +1,11 @@
 import {
+  buildOptionsFromDays,
   buildShareLink,
+  expandTimeRange,
+  formatOption,
   generatePollId,
   getClient,
+  isValidTimeFormat,
   normalizeOptions,
   validatePollInput,
 } from './app.js';
@@ -11,11 +15,31 @@ if (incomingPollId && /^[23456789a-hjkmnp-z]{8}$/.test(incomingPollId)) {
   location.replace(buildShareLink(incomingPollId));
 }
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+const DOW_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const FIXED_SLOTS = ['17:00', '18:00', '19:00', '20:00'];
+const MAX_DOTS = 4;
+
 const titleInput = document.querySelector('#title');
 const descriptionInput = document.querySelector('#description');
-const dateInput = document.querySelector('#date-input');
-const timeInput = document.querySelector('#time-input');
-const addOptionButton = document.querySelector('#add-option');
+const calGrid = document.querySelector('#cal-grid');
+const calMonth = document.querySelector('#cal-month');
+const calPrev = document.querySelector('#cal-prev');
+const calNext = document.querySelector('#cal-next');
+const popover = document.querySelector('#day-popover');
+const popoverTitle = document.querySelector('#popover-title');
+const slotChips = document.querySelector('#slot-chips');
+const exactTimeInput = document.querySelector('#exact-time');
+const addExactButton = document.querySelector('#add-exact');
+const rangeStartInput = document.querySelector('#range-start');
+const rangeEndInput = document.querySelector('#range-end');
+const addRangeButton = document.querySelector('#add-range');
+const popoverError = document.querySelector('#popover-error');
+const dayChosenList = document.querySelector('#day-chosen');
+const clearDayButton = document.querySelector('#clear-day');
+const doneDayButton = document.querySelector('#done-day');
+const popoverBackdrop = document.querySelector('#popover-backdrop');
 const optionsList = document.querySelector('#options-list');
 const form = document.querySelector('#create-form');
 const errorBox = document.querySelector('#create-error');
@@ -26,32 +50,287 @@ const copyLinkButton = document.querySelector('#copy-link');
 const openPollLink = document.querySelector('#open-poll');
 const submitButton = form.querySelector('button[type="submit"]');
 
-const pendingOptions = [];
+const daySlots = new Map();
 const client = getClient();
+let viewYear;
+let viewMonth;
+let popoverDate = null;
+let popoverTrigger = null;
 
 function showError(messages) {
   errorBox.textContent = Array.isArray(messages) ? messages.join('\n') : messages;
 }
 
-function renderOptions() {
+function showPopoverError(message) {
+  popoverError.textContent = message;
+}
+
+function isoOf(day) {
+  return `${String(day.getUTCFullYear()).padStart(4, '0')}-${
+    String(day.getUTCMonth() + 1).padStart(2, '0')}-${
+    String(day.getUTCDate()).padStart(2, '0')}`;
+}
+
+function slotsFor(dateIso) {
+  return daySlots.get(dateIso) ?? [];
+}
+
+function addSlot(dateIso, time) {
+  const slots = slotsFor(dateIso);
+  if (slots.includes(time)) return false;
+  const next = [...slots, time].sort();
+  daySlots.set(dateIso, next);
+  return true;
+}
+
+function removeSlot(dateIso, time) {
+  const slots = slotsFor(dateIso);
+  const next = slots.filter((value) => value !== time);
+  if (next.length === 0) daySlots.delete(dateIso);
+  else daySlots.set(dateIso, next);
+}
+
+function renderCalendar() {
+  calMonth.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+  calGrid.replaceChildren();
+  for (const label of DOW_LABELS) {
+    const dow = document.createElement('span');
+    dow.className = 'cal-dow';
+    dow.textContent = label;
+    calGrid.append(dow);
+  }
+
+  const firstOfMonth = new Date(Date.UTC(viewYear, viewMonth, 1));
+  const lead = (firstOfMonth.getUTCDay() + 6) % 7;
+  const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+  const daysInPrevMonth = new Date(Date.UTC(viewYear, viewMonth, 0)).getUTCDate();
+  const totalCells = lead + daysInMonth;
+  const trailing = (7 - (totalCells % 7)) % 7;
+
+  for (let index = lead - 1; index >= 0; index -= 1) {
+    const dim = document.createElement('span');
+    dim.className = 'cal-day dim';
+    dim.textContent = String(daysInPrevMonth - index);
+    calGrid.append(dim);
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const dateIso = isoOf(new Date(Date.UTC(viewYear, viewMonth, day)));
+    const slots = slotsFor(dateIso);
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'cal-day';
+    if (slots.length > 0) cell.classList.add('filled');
+    cell.textContent = String(day);
+    cell.setAttribute('aria-label',
+      `Add times for ${MONTH_NAMES[viewMonth]} ${day}` +
+      (slots.length > 0 ? ` (${slots.length} chosen)` : ''));
+    if (slots.length > 0) {
+      const dots = document.createElement('span');
+      dots.className = 'cal-dots';
+      for (let index = 0; index < Math.min(slots.length, MAX_DOTS); index += 1) {
+        const dot = document.createElement('span');
+        dot.className = 'cal-dot';
+        dots.append(dot);
+      }
+      cell.append(dots);
+    }
+    cell.addEventListener('click', () => openPopover(dateIso, cell));
+    calGrid.append(cell);
+  }
+
+  for (let index = 1; index <= trailing; index += 1) {
+    const dim = document.createElement('span');
+    dim.className = 'cal-day dim';
+    dim.textContent = String(index);
+    calGrid.append(dim);
+  }
+}
+
+function positionPopover(trigger) {
+  const rect = trigger.getBoundingClientRect();
+  const width = popover.offsetWidth;
+  const height = popover.offsetHeight;
+  const margin = 8;
+  let left = Math.min(Math.max(rect.left, margin), window.innerWidth - width - margin);
+  let top = rect.bottom + margin;
+  if (top + height > window.innerHeight - margin) {
+    top = Math.max(rect.top - height - margin, margin);
+  }
+  popover.style.left = `${left}px`;
+  popover.style.top = `${top}px`;
+}
+
+function openPopover(dateIso, trigger) {
+  popoverDate = dateIso;
+  popoverTrigger = trigger;
+  popover.hidden = false;
+  popoverBackdrop.hidden = window.matchMedia('(min-width: 641px)').matches;
+  positionPopover(trigger);
+  popover.focus({ preventScroll: true });
+  renderPopover();
+}
+
+function closePopover() {
+  const returning = popoverTrigger;
+  popover.hidden = true;
+  popoverBackdrop.hidden = true;
+  popoverDate = null;
+  popoverTrigger = null;
+  returning?.focus({ preventScroll: true });
+  renderSummary();
+}
+
+function renderPopover() {
+  const dateIso = popoverDate;
+  if (!dateIso) return;
+  const slots = slotsFor(dateIso);
+  popoverTitle.textContent = formatOption({ date: dateIso, time: null });
+  slotChips.replaceChildren();
+  for (const slot of FIXED_SLOTS) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'slot-chip';
+    chip.classList.toggle('on', slots.includes(slot));
+    chip.setAttribute('aria-pressed', String(slots.includes(slot)));
+    chip.textContent = slot;
+    chip.addEventListener('click', () => {
+      if (slots.includes(slot)) removeSlot(dateIso, slot);
+      else addSlot(dateIso, slot);
+      renderPopover();
+      renderCalendar();
+      renderSummary();
+    });
+    slotChips.append(chip);
+  }
+  const other = document.createElement('button');
+  other.type = 'button';
+  other.className = 'slot-chip other';
+  other.textContent = 'Other…';
+  other.addEventListener('click', () => {
+    try {
+      exactTimeInput.showPicker();
+    } catch {
+      exactTimeInput.focus();
+    }
+    if (!exactTimeInput.showPicker) exactTimeInput.focus();
+  });
+  slotChips.append(other);
+
+  dayChosenList.replaceChildren();
+  for (const slot of slots) {
+    const item = document.createElement('li');
+    const chip = document.createElement('span');
+    chip.className = 'chosen-chip';
+    chip.textContent = slot;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '✕';
+    remove.setAttribute('aria-label', `Remove ${slot}`);
+    remove.addEventListener('click', () => {
+      removeSlot(dateIso, slot);
+      renderPopover();
+      renderCalendar();
+      renderSummary();
+    });
+    chip.append(remove);
+    item.append(chip);
+    dayChosenList.append(item);
+  }
+  showPopoverError('');
+}
+
+addExactButton.addEventListener('click', () => {
+  const value = exactTimeInput.value;
+  if (!isValidTimeFormat(value)) {
+    showPopoverError('Enter a time like 18:45.');
+    return;
+  }
+  if (slotsFor(popoverDate).includes(value)) {
+    showPopoverError('That time is already added.');
+    return;
+  }
+  addSlot(popoverDate, value);
+  exactTimeInput.value = '';
+  renderPopover();
+  renderCalendar();
+  renderSummary();
+});
+
+addRangeButton.addEventListener('click', () => {
+  const slots = expandTimeRange(rangeStartInput.value, rangeEndInput.value);
+  if (!slots) {
+    showPopoverError('Use two valid times, e.g. 17:30 – 20:30.');
+    return;
+  }
+  for (const slot of slots) addSlot(popoverDate, slot);
+  rangeStartInput.value = '';
+  rangeEndInput.value = '';
+  renderPopover();
+  renderCalendar();
+  renderSummary();
+});
+
+clearDayButton.addEventListener('click', () => {
+  daySlots.delete(popoverDate);
+  renderPopover();
+  renderCalendar();
+  renderSummary();
+});
+
+doneDayButton.addEventListener('click', closePopover);
+popoverBackdrop.addEventListener('click', closePopover);
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !popover.hidden) closePopover();
+});
+document.addEventListener('click', (event) => {
+  if (popover.hidden) return;
+  if (event.target instanceof Node && !popover.contains(event.target)
+    && !(event.target instanceof Element && event.target.closest('.cal-day'))) {
+    closePopover();
+  }
+});
+
+function renderSummary() {
   optionsList.replaceChildren();
-  pendingOptions.forEach((option, index) => {
+  const entries = buildOptionsFromDays(
+    [...daySlots.entries()].map(([date, times]) => ({ date, times }))
+  );
+  const { options } = normalizeOptions(entries);
+  options.forEach((option) => {
     const item = document.createElement('li');
     item.className = 'option-chip';
     const text = document.createElement('span');
-    text.textContent = option.time ? `${option.date} · ${option.time}` : option.date;
+    text.textContent = formatOption(option);
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.textContent = 'Remove';
+    remove.dataset.date = option.date;
+    remove.dataset.time = option.time ?? '';
     remove.setAttribute('aria-label', `Remove ${text.textContent}`);
     remove.addEventListener('click', () => {
-      pendingOptions.splice(index, 1);
-      renderOptions();
+      removeSlot(option.date, option.time ?? '');
+      renderCalendar();
+      renderSummary();
     });
     item.append(text, remove);
     optionsList.append(item);
   });
 }
+
+calPrev.addEventListener('click', () => {
+  const first = new Date(Date.UTC(viewYear, viewMonth - 1, 1));
+  viewYear = first.getUTCFullYear();
+  viewMonth = first.getUTCMonth();
+  renderCalendar();
+});
+
+calNext.addEventListener('click', () => {
+  const first = new Date(Date.UTC(viewYear, viewMonth + 1, 1));
+  viewYear = first.getUTCFullYear();
+  viewMonth = first.getUTCMonth();
+  renderCalendar();
+});
 
 function copyShareLink() {
   const link = shareLink.textContent;
@@ -74,33 +353,20 @@ function fallbackCopy(value) {
   input.remove();
 }
 
-addOptionButton.addEventListener('click', () => {
-  const { options, errors } = normalizeOptions([{
-    date: dateInput.value,
-    time: timeInput.value,
-    label: null,
-  }]);
-  if (errors.length > 0 || options.length !== 1) {
-    showError(errors.length > 0 ? errors : ['Invalid option.']);
-    return;
-  }
-
-  pendingOptions.push(options[0]);
-  showError('');
-  renderOptions();
-  timeInput.value = '';
-});
-
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const normalization = normalizeOptions(pendingOptions);
+  closePopover();
+  const entries = buildOptionsFromDays(
+    [...daySlots.entries()].map(([date, times]) => ({ date, times }))
+  );
+  const normalization = normalizeOptions(entries);
   const options = normalization.options;
   const errors = [
     ...normalization.errors,
     ...validatePollInput({
       title: titleInput.value,
       description: descriptionInput.value,
-      options: pendingOptions,
+      options,
     }),
   ];
   if (errors.length > 0) {
@@ -144,6 +410,12 @@ form.addEventListener('submit', async (event) => {
 });
 
 copyLinkButton.addEventListener('click', copyShareLink);
+
+const today = new Date();
+viewYear = today.getFullYear();
+viewMonth = today.getMonth();
+renderCalendar();
+renderSummary();
 
 if (!client) {
   setupNotice.hidden = false;

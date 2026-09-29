@@ -1,9 +1,13 @@
 import {
+  buildHeatmap,
   buildViewModel,
   formatOption,
   getClient,
+  isValidDateFormat,
   validateResponseInput,
 } from './app.js';
+
+const WEEKDAYS_MIN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const pollId = new URLSearchParams(location.search).get('poll');
 const validPollId = /^[23456789a-hjkmnp-z]{8}$/.test(pollId ?? '');
@@ -63,47 +67,83 @@ function renderOptions(options) {
   }
 }
 
-function renderResults(model, responses) {
-  const orderedResponses = (Array.isArray(responses) ? responses : [])
-    .map((response, sourceIndex) => ({ response, sourceIndex }))
-    .sort((a, b) => {
-      const left = a.response?.created_at == null ? '' : String(a.response.created_at);
-      const right = b.response?.created_at == null ? '' : String(b.response.created_at);
-      return left.localeCompare(right) || a.sourceIndex - b.sourceIndex;
-    })
-    .map(({ response }) => response);
+function heatLevel(count, maxCount) {
+  if (count <= 0) return 0;
+  return Math.min(4, Math.max(1, Math.ceil((count / maxCount) * 4)));
+}
+
+function renderDateHeader(dateIso) {
+  const header = document.createElement('th');
+  header.scope = 'col';
+  if (isValidDateFormat(dateIso)) {
+    const [year, month, day] = dateIso.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    const dow = document.createElement('span');
+    dow.className = 'heat-col-dow';
+    dow.textContent = WEEKDAYS_MIN[date.getUTCDay()];
+    const dayLabel = document.createElement('span');
+    dayLabel.className = 'heat-col-day';
+    dayLabel.textContent = String(day);
+    header.append(dow, dayLabel);
+  } else {
+    header.className = 'heat-col-raw';
+    header.textContent = dateIso || '–';
+  }
+  return header;
+}
+
+function renderHeatCell(entry, maxCount) {
+  const cell = document.createElement('td');
+  const plate = document.createElement('div');
+  plate.className = 'heat-cell';
+  if (entry === null) {
+    plate.classList.add('heat-none');
+    cell.setAttribute('aria-label', 'No option at this time');
+  } else {
+    const level = heatLevel(entry.count, maxCount);
+    plate.classList.add(`heat-${level}`);
+    if (entry.best) plate.classList.add('heat-best');
+    plate.textContent = String(entry.count);
+    if (entry.best) {
+      const star = document.createElement('span');
+      star.className = 'heat-best-star';
+      star.textContent = '★';
+      star.setAttribute('aria-label', 'Best slot');
+      plate.prepend(star);
+    }
+    const names = entry.voters.join(', ');
+    cell.setAttribute('aria-label',
+      `${entry.count} available${names ? `: ${names}` : ''}`);
+    if (names) cell.title = names;
+  }
+  cell.append(plate);
+  return cell;
+}
+
+function renderResults(model) {
+  const heat = buildHeatmap(model);
   const table = document.createElement('table');
   const head = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['Count', 'Option', ...model.names].forEach((heading) => {
-    const cell = document.createElement('th');
-    cell.scope = 'col';
-    cell.textContent = heading;
-    headerRow.append(cell);
-  });
+  const corner = document.createElement('th');
+  corner.scope = 'col';
+  corner.textContent = 'Time';
+  headerRow.append(corner);
+  for (const column of heat.columns) headerRow.append(renderDateHeader(column.date));
   head.append(headerRow);
 
   const body = document.createElement('tbody');
-  model.rows.forEach((row) => {
-    const tableRow = document.createElement('tr');
-    if (row.count === model.maxCount && model.maxCount > 0) tableRow.className = 'max-row';
-    const count = document.createElement('td');
-    count.className = 'count';
-    count.textContent = String(row.count);
-    const option = document.createElement('th');
-    option.scope = 'row';
-    option.textContent = row.option;
-    tableRow.append(count, option);
-    model.names.forEach((name, respondentIndex) => {
-      const cell = document.createElement('td');
-      if (orderedResponses[respondentIndex]?.selected?.includes(row.index)) {
-        cell.className = 'available';
-        cell.textContent = '✓';
-        cell.setAttribute('aria-label', `${name} selected`);
-      }
-      tableRow.append(cell);
-    });
-    body.append(tableRow);
+  heat.times.forEach((time, timeIndex) => {
+    const row = document.createElement('tr');
+    const label = document.createElement('th');
+    label.scope = 'row';
+    label.className = 'time-label';
+    label.textContent = time ?? 'Any time';
+    row.append(label);
+    for (const column of heat.columns) {
+      row.append(renderHeatCell(column.cells[timeIndex], heat.maxCount));
+    }
+    body.append(row);
   });
   table.append(head, body);
   resultsGrid.replaceChildren(table);
@@ -130,7 +170,7 @@ async function loadResults() {
     .eq('poll_id', pollId)
     .order('created_at');
   if (error) throw error;
-  renderResults(buildViewModel(poll.options, data), data);
+  renderResults(buildViewModel(poll.options, data));
   setResultsStatus('');
 }
 

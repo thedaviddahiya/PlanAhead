@@ -108,6 +108,7 @@ export function buildViewModel(options, responses) {
   const responseList = Array.isArray(responses) ? responses : [];
   const rows = optionList.map((option, index) => ({
     option: formatOption(option),
+    raw: option,
     index,
     count: 0,
     voters: [],
@@ -136,6 +137,73 @@ export function buildViewModel(options, responses) {
 
 export function buildShareLink(pollId) {
   return new URL(`poll.html?poll=${encodeURIComponent(pollId)}`, location.href).href;
+}
+
+export function expandTimeRange(start, end) {
+  if (!isValidTimeFormat(start) || !isValidTimeFormat(end)) return null;
+  const toMinutes = (value) => {
+    const [hours, minutes] = value.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+  const from = toMinutes(start);
+  const to = toMinutes(end);
+  if (to < from) return null;
+  const slots = [];
+  for (let minutes = from; minutes <= to; minutes += 30) {
+    const hours = Math.floor(minutes / 60);
+    slots.push(`${String(hours).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`);
+  }
+  return slots;
+}
+
+export function buildOptionsFromDays(days) {
+  const entries = [];
+  for (const day of Array.isArray(days) ? days : []) {
+    const date = typeof day?.date === 'string' ? day.date : '';
+    for (const time of Array.isArray(day?.times) ? day.times : []) {
+      entries.push({ date, time, label: null });
+    }
+  }
+  return entries.sort((a, b) =>
+    a.date.localeCompare(b.date) || String(a.time).localeCompare(String(b.time)));
+}
+
+export function buildHeatmap(model) {
+  const rows = Array.isArray(model?.rows) ? model.rows : [];
+  const times = [];
+  const timeKeys = new Set();
+  for (const row of rows) {
+    const time = row?.raw?.time ?? null;
+    const key = time ?? '';
+    if (!timeKeys.has(key)) {
+      timeKeys.add(key);
+      times.push(time);
+    }
+  }
+  const columns = [];
+  const dates = new Map();
+  for (const row of rows) {
+    const date = row?.raw?.date ?? '';
+    if (!dates.has(date)) {
+      const column = { date, cells: times.map(() => null) };
+      dates.set(date, column);
+      columns.push(column);
+    }
+  }
+  for (const row of rows) {
+    const date = row?.raw?.date ?? '';
+    const time = row?.raw?.time ?? null;
+    const cellIndex = times.findIndex((value) => (value ?? '') === (time ?? ''));
+    if (cellIndex === -1) continue;
+    dates.get(date).cells[cellIndex] = { count: row.count, voters: [...row.voters], best: false };
+  }
+  const maxCount = model?.maxCount ?? 0;
+  for (const column of columns) {
+    for (const cell of column.cells) {
+      if (cell && maxCount > 0 && cell.count === maxCount) cell.best = true;
+    }
+  }
+  return { times, columns, maxCount };
 }
 
 export function getClient() {

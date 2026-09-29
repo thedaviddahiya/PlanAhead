@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Create a poll | PlanAhead</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script type="module" src="js/config.js"></script>
@@ -29,18 +32,36 @@
         <textarea id="description" name="description" maxlength="2000" rows="3"></textarea>
 
         <fieldset>
-          <legend>Options</legend>
-          <div class="option-inputs">
-            <div>
-              <label for="date-input">Date</label>
-              <input id="date-input" type="date">
+          <legend>Pick the days, then add times in each day's popup</legend>
+          <div class="calendar-block">
+            <div class="cal-toolbar">
+              <button type="button" id="cal-prev" class="cal-nav" aria-label="Previous month">‹</button>
+              <span id="cal-month" aria-live="polite"></span>
+              <button type="button" id="cal-next" class="cal-nav" aria-label="Next month">›</button>
             </div>
-            <div>
-              <label for="time-input">Time <span>(optional)</span></label>
-              <input id="time-input" type="time">
-            </div>
-            <button id="add-option" type="button">Add option</button>
+            <div class="cal-grid" id="cal-grid"></div>
           </div>
+          <div id="day-popover" class="day-popover" hidden tabindex="-1">
+            <div class="popover-title" id="popover-title"></div>
+            <div class="slot-chips" id="slot-chips"></div>
+            <div class="custom-row">
+              <input id="exact-time" type="time" aria-label="Exact time">
+              <button type="button" id="add-exact">Add time</button>
+            </div>
+            <div class="custom-row">
+              <input id="range-start" type="time" aria-label="Range start">
+              <span class="range-dash">–</span>
+              <input id="range-end" type="time" aria-label="Range end">
+              <button type="button" id="add-range">Add range</button>
+            </div>
+            <div class="popover-error" id="popover-error" role="alert" aria-live="polite"></div>
+            <ul id="day-chosen" class="chosen-list"></ul>
+            <div class="popover-actions">
+              <button type="button" id="clear-day">Clear day</button>
+              <button type="button" id="done-day">Done</button>
+            </div>
+          </div>
+          <div class="popover-backdrop" id="popover-backdrop" hidden></div>
           <ul id="options-list" aria-live="polite"></ul>
         </fieldset>
 

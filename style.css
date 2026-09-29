@@ -1,18 +1,19 @@
 :root {
-  --ink: #172235;
-  --muted: #647086;
-  --line: #dbe2ec;
-  --surface: #ffffff;
-  --canvas: #f5f7fb;
-  --accent: #2859c5;
-  --accent-dark: #1d4297;
-  --accent-soft: #edf2ff;
-  --warning: #815c00;
-  --warning-soft: #fff7dc;
-  --danger: #a52b35;
+  --ink: #2b251c;
+  --muted: #7d7157;
+  --line: #e7dfc9;
+  --line-strong: #d3c7a6;
+  --surface: #fffdf8;
+  --canvas: #f8f4e8;
+  --accent: #96700f;
+  --accent-deep: #6e540c;
+  --accent-soft: #f6efdc;
+  --heat-none: #eceade;
+  --danger: #a33524;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
   color: var(--ink);
   background: var(--canvas);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.5;
 }
 
@@ -37,7 +38,7 @@ a {
 }
 
 a {
-  color: var(--accent-dark);
+  color: var(--accent-deep);
   font-weight: 650;
 }
 
@@ -46,7 +47,7 @@ a:hover {
 }
 
 :focus-visible {
-  outline: 3px solid #8aa9ff;
+  outline: 3px solid #b98d2e;
   outline-offset: 3px;
 }
 
@@ -64,8 +65,10 @@ a:hover {
 .page-header h1 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(2rem, 7vw, 3.25rem);
-  letter-spacing: -0.055em;
+  font-family: var(--font-display);
+  font-size: clamp(2.1rem, 7vw, 3.4rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
   line-height: 1;
 }
 
@@ -83,8 +86,10 @@ p {
 
 h2 {
   margin-bottom: 1.25rem;
-  font-size: 1.3rem;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 .card {
@@ -93,7 +98,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 1rem;
   background: var(--surface);
-  box-shadow: 0 0.75rem 2rem rgb(23 34 53 / 6%);
+  box-shadow: 0 0.75rem 2rem rgb(63 51 22 / 7%);
 }
 
 label,
@@ -116,7 +121,7 @@ textarea {
   width: 100%;
   min-height: 2.75rem;
   padding: 0.6rem 0.75rem;
-  border: 1px solid #b9c5d5;
+  border: 1px solid var(--line-strong);
   border-radius: 0.55rem;
   color: var(--ink);
   background: #fff;
@@ -125,13 +130,13 @@ textarea {
 
 input:hover,
 textarea:hover {
-  border-color: #8ea0b8;
+  border-color: #b3a477;
 }
 
 input:focus,
 textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgb(40 89 197 / 14%);
+  box-shadow: 0 0 0 3px rgb(150 112 15 / 16%);
   outline: 0;
 }
 
@@ -158,9 +163,9 @@ button,
 
 button:hover,
 .button:hover {
-  border-color: var(--accent-dark);
+  border-color: var(--accent-deep);
   color: #fff;
-  background: var(--accent-dark);
+  background: var(--accent-deep);
 }
 
 button:active,
@@ -186,25 +191,325 @@ legend {
   padding: 0;
 }
 
-.option-inputs {
-  display: grid;
+/* ------------------------------------------------------------
+   Wall-calendar picker (create page)
+   ------------------------------------------------------------ */
+.calendar-block {
+  margin-top: 0.75rem;
+}
+
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  margin-bottom: 0.6rem;
 }
 
-.option-inputs label {
-  margin-top: 0;
+.cal-toolbar #cal-month {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
 }
 
-.option-inputs button {
-  align-self: end;
+.cal-nav {
+  min-width: 2.75rem;
+  padding: 0.4rem 0.5rem;
+  border-color: var(--line-strong);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
+.cal-nav:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.cal-dow {
+  padding: 0.25rem 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 3.4rem;
+  min-width: 0;
+  padding: 0.3rem 0.15rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  color: var(--ink);
+  background: #fff;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.cal-day:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.cal-day.dim {
+  color: #b9ae93;
+  background: transparent;
+  border-style: dashed;
+  cursor: default;
+}
+
+.cal-day.dim:hover {
+  border-color: var(--line);
+  background: transparent;
+}
+
+.cal-day.filled {
+  border-color: var(--accent);
+}
+
+.cal-dots {
+  display: flex;
+  gap: 0.2rem;
+  min-height: 0.3rem;
+}
+
+.cal-dot {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ------------------------------------------------------------
+   Day popover
+   ------------------------------------------------------------ */
+.day-popover {
+  position: fixed;
+  z-index: 20;
+  width: min(19rem, calc(100vw - 1.5rem));
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface);
+  box-shadow: 0 1rem 2.5rem rgb(63 51 22 / 25%);
+}
+
+.popover-title {
+  margin-bottom: 0.6rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.slot-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.slot-chip {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.55rem;
+  color: var(--ink);
+  background: #fff;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.slot-chip.on {
+  border-color: var(--accent);
+  color: #fff;
+  background: var(--accent);
+}
+
+.slot-chip.other {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.custom-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.custom-row input {
+  width: auto;
+  min-height: 2.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.custom-row button {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.88rem;
+}
+
+.range-dash {
+  color: var(--muted);
+}
+
+.popover-error {
+  min-height: 1.2rem;
+  margin: 0.35rem 0 0;
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.chosen-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chosen-list:empty {
+  margin: 0;
+}
+
+.chosen-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.35rem 0.3rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font-weight: 650;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chosen-chip button {
+  min-height: 1.9rem;
+  min-width: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--accent-deep);
+  background: transparent;
+  font-size: 1rem;
+}
+
+.chosen-chip button:hover {
+  color: #fff;
+  background: var(--accent-deep);
+}
+
+.popover-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+
+.popover-actions button {
+  min-height: 2.5rem;
+  padding: 0.35rem 0.85rem;
+}
+
+#clear-day {
+  border-color: transparent;
+  color: var(--muted);
+  background: transparent;
+}
+
+#clear-day:hover {
+  border-color: var(--line-strong);
+  color: var(--danger);
+  background: #fff;
+}
+
+.popover-backdrop {
+  position: fixed;
+  z-index: 15;
+  inset: 0;
+  background: rgb(43 37 28 / 35%);
+}
+
+@media (max-width: 640px) {
+  .day-popover {
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100%;
+    border-radius: 1rem 1rem 0 0;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ------------------------------------------------------------
+   Chosen-slot summary (create page)
+   ------------------------------------------------------------ */
 #options-list {
   display: grid;
   gap: 0.55rem;
   margin: 1rem 0 0;
   padding: 0;
   list-style: none;
+}
+
+#options-list:empty {
+  margin: 0;
+}
+
+.option-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.55rem 0.45rem 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  font-weight: 650;
+}
+
+.option-chip button {
+  min-height: 2.5rem;
+  padding: 0.25rem 0.6rem;
+  border-color: transparent;
+  color: var(--accent-deep);
+  background: transparent;
+  font-size: 0.85rem;
+}
+
+.option-chip button:hover {
+  border-color: var(--line-strong);
+  color: var(--accent-deep);
+  background: #fff;
 }
 
 .option-group-heading {
@@ -218,35 +523,9 @@ legend {
   margin-top: 0;
 }
 
-.option-chip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  min-height: 2.75rem;
-  padding: 0.45rem 0.55rem 0.45rem 0.8rem;
-  border: 1px solid #cbd7f1;
-  border-radius: 999px;
-  color: #243b71;
-  background: var(--accent-soft);
-  font-weight: 650;
-}
-
-.option-chip button {
-  min-height: 2.5rem;
-  padding: 0.25rem 0.6rem;
-  border-color: transparent;
-  color: var(--accent-dark);
-  background: transparent;
-  font-size: 0.85rem;
-}
-
-.option-chip button:hover {
-  border-color: #c3d0f0;
-  color: var(--accent-dark);
-  background: #dce6ff;
-}
-
+/* ------------------------------------------------------------
+   Respond form (poll page)
+   ------------------------------------------------------------ */
 .response-option {
   display: flex;
   align-items: center;
@@ -261,8 +540,8 @@ legend {
 }
 
 .response-option:hover {
-  border-color: #b8c8eb;
-  background: #fafbff;
+  border-color: var(--line-strong);
+  background: var(--accent-soft);
 }
 
 .response-option input {
@@ -282,22 +561,22 @@ legend {
 .notice {
   margin-bottom: 1rem;
   padding: 0.75rem;
-  border: 1px solid #edd99d;
+  border: 1px solid var(--line-strong);
   border-radius: 0.55rem;
-  color: #614700;
-  background: var(--warning-soft);
+  color: var(--accent-deep);
+  background: var(--accent-soft);
 }
 
 .notice a {
-  color: var(--warning);
+  color: var(--accent-deep);
 }
 
 .share-link {
   overflow-wrap: anywhere;
   padding: 0.75rem;
-  border: 1px dashed #b9c8e8;
+  border: 1px dashed var(--line-strong);
   border-radius: 0.55rem;
-  color: var(--accent-dark);
+  color: var(--accent-deep);
   background: var(--accent-soft);
   font-weight: 650;
 }
@@ -308,6 +587,9 @@ legend {
   gap: 0.75rem;
 }
 
+/* ------------------------------------------------------------
+   Results heatmap (poll page)
+   ------------------------------------------------------------ */
 #results-panel {
   min-width: 0;
 }
@@ -315,7 +597,7 @@ legend {
 #refresh-results {
   min-height: 2.5rem;
   padding: 0.45rem 0.8rem;
-  color: var(--accent-dark);
+  color: var(--accent-deep);
   background: #fff;
 }
 
@@ -331,85 +613,127 @@ legend {
 }
 
 #results-grid table {
-  width: 100%;
-  min-width: max-content;
   border-collapse: separate;
-  border-spacing: 0;
-  white-space: nowrap;
-  font-size: 0.9rem;
+  border-spacing: 0.25rem;
+  font-variant-numeric: tabular-nums;
 }
 
 #results-grid th,
 #results-grid td {
-  padding: 0.7rem 0.75rem;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
-}
-
-#results-grid thead th {
-  border-bottom: 2px solid #c9d4e4;
-  color: var(--muted);
-  background: #fbfcfe;
-  font-size: 0.76rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-#results-grid tbody tr:nth-child(even) th,
-#results-grid tbody tr:nth-child(even) td {
-  background: #fafbfe;
-}
-
-#results-grid th:first-child,
-#results-grid td:first-child {
-  position: sticky;
-  left: 0;
-  background: var(--surface);
-  box-shadow: 5px 0 8px -8px rgb(23 34 53 / 40%);
-}
-
-#results-grid thead th:first-child {
-  z-index: 2;
-  background: #fbfcfe;
-}
-
-#results-grid .available {
-  color: var(--accent);
-  font-size: 1.1rem;
-  font-weight: 800;
+  padding: 0;
   text-align: center;
 }
 
-#results-grid .max-row th,
-#results-grid .max-row td {
-  background: var(--accent-soft);
+#results-grid thead th {
+  padding: 0.35rem 0.5rem 0.45rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: bottom;
 }
 
-#results-grid .max-row th:first-child,
-#results-grid .max-row td:first-child {
-  background: #e2eaff;
+.heat-col-dow {
+  display: block;
+  font-size: 0.7rem;
 }
 
-#results-grid .count {
-  color: var(--accent-dark);
-  font-weight: 800;
+.heat-col-day {
+  display: block;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.heat-col-raw {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+#results-grid .time-label {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 4.5rem;
+  padding: 0 0.6rem;
+  border-radius: 0.4rem;
+  color: var(--muted);
+  background: var(--surface);
+  box-shadow: 5px 0 8px -8px rgb(63 51 22 / 40%);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.heat-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 3.4rem;
+  min-height: 2.6rem;
+  border-radius: 0.5rem;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.heat-none {
+  color: #a49a7f;
+  background: transparent;
+  border: 1px dashed var(--line);
+  font-weight: 500;
+}
+
+.heat-0 {
+  color: #8c8265;
+  background: var(--heat-none);
+}
+
+.heat-1 {
+  background: #f3ecd6;
+}
+
+.heat-2 {
+  background: #e6d19a;
+}
+
+.heat-3 {
+  background: #cfa94e;
+}
+
+.heat-4 {
+  color: #fff;
+  background: var(--accent);
+}
+
+.heat-cell.heat-best {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 1px;
+}
+
+.heat-best-star {
+  color: var(--accent-deep);
+  font-size: 0.95rem;
+}
+
+.heat-4 .heat-best-star {
+  color: #ffe9b3;
 }
 
 #results-status {
   min-height: 1.5rem;
   margin: 0.75rem 0;
-  color: var(--warning);
+  color: var(--accent-deep);
   font-size: 0.9rem;
 }
 
 @media (min-width: 600px) {
   .card {
     padding: 1.5rem;
-  }
-
-  .option-inputs {
-    grid-template-columns: 1fr 1fr auto;
-    align-items: end;
   }
 }
 
