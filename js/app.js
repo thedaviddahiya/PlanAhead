@@ -206,7 +206,10 @@ export function buildHeatmap(model) {
   return { times, columns, maxCount };
 }
 
-export const PERSON_COLORS = ['#96700f', '#3a6b35', '#5a4a8a', '#8a3038'];
+export const PERSON_COLORS = [
+  '#96700f', '#3a6b35', '#5a4a8a', '#8a3038',
+  '#b46f2a', '#5f7f6a', '#9b5d75', '#6f6b3f',
+];
 
 export function assignTileColors(names) {
   const colors = new Map();

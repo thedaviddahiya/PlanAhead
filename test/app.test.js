@@ -255,13 +255,14 @@ test('PERSON_COLORS leads with the approved palette order', () => {
 });
 
 test('assignTileColors maps unique names in first-seen order and cycles the palette', () => {
-  const colors = assignTileColors(['Ana', 'Ben', 'Ana', 'Chloe', 'Dan', 'Eve']);
+  const colors = assignTileColors(['Ana', 'Ben', 'Ana', 'Chloe', 'Dan', 'Eve', 'Fay', 'Gus', 'Hana', 'Ivy']);
   assert.equal(colors.get('Ana'), '#96700f');
   assert.equal(colors.get('Ben'), '#3a6b35');
   assert.equal(colors.get('Chloe'), '#5a4a8a');
   assert.equal(colors.get('Dan'), '#8a3038');
-  assert.equal(colors.get('Eve'), '#96700f');
-  assert.equal(colors.size, 5);
+  assert.equal(colors.get('Eve'), '#b46f2a');
+  assert.equal(colors.get('Ivy'), '#96700f');
+  assert.equal(colors.size, 9);
 });
 
 test('dayAvailabilityLabel renders the 9-17 window for day-only options', () => {

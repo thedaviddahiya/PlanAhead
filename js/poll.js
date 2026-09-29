@@ -289,9 +289,21 @@ calendar = createCalendar({
   chosenListEl: document.querySelector('#day-chosen'),
   clearEl: document.querySelector('#clear-day'),
   doneEl: document.querySelector('#done-day'),
+  editorMode: 'offered-only',
+  slotsForDate: (date) => optionsForDay(date)
+    .filter((option) => option.time !== null)
+    .map((option) => option.time),
 });
 
 calendar.onChange(() => {
+  if (currentModel) renderTiles(currentModel);
+});
+
+document.querySelector('#cal-prev').addEventListener('click', () => {
+  if (currentModel) renderTiles(currentModel);
+});
+
+document.querySelector('#cal-next').addEventListener('click', () => {
   if (currentModel) renderTiles(currentModel);
 });
 

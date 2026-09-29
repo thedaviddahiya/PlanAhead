@@ -24,3 +24,16 @@ Implemented the respond-page wall calendar integration.
 ## Concerns
 
 - Browser smoke testing was attempted through the provided Playwright workflow but could not run because the environment does not have the Python `playwright` module installed.
+
+## Fix Round 1
+
+### Changes
+
+- Re-rendered tiles and best-day stars after respond-calendar previous/next navigation.
+- Extended `PERSON_COLORS` to eight warm/muted hues while preserving the original first four and updated the existing palette test to verify the ninth unique name cycles to the first hue.
+- Added shared-calendar `editorMode` and offered-slot callback support. The respond page now uses `offered-only`, rendering only that day’s poll options, preselecting existing choices, and hiding Other/exact/range controls. The create page remains full editor mode.
+
+### Verification
+
+- Command: `node --check js/app.js && node --check js/calendar.js && node --check js/poll.js && node --test`
+- Output: 23 tests, 23 passed, 0 failed.

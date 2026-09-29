@@ -28,6 +28,8 @@ export function createCalendar({
   chosenListEl,
   clearEl,
   doneEl,
+  editorMode = 'full',
+  slotsForDate,
 }) {
   const daySlots = new Map();
   let viewYear;
@@ -165,7 +167,10 @@ export function createCalendar({
     const slots = slotsFor(dateIso);
     popoverTitleEl.textContent = formatOption({ date: dateIso, time: null });
     slotChipsEl.replaceChildren();
-    for (const slot of FIXED_SLOTS) {
+    const offeredSlots = typeof slotsForDate === 'function'
+      ? slotsForDate(dateIso)
+      : FIXED_SLOTS;
+    for (const slot of offeredSlots) {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'slot-chip';
@@ -181,19 +186,21 @@ export function createCalendar({
       });
       slotChipsEl.append(chip);
     }
-    const other = document.createElement('button');
-    other.type = 'button';
-    other.className = 'slot-chip other';
-    other.textContent = 'Other…';
-    other.addEventListener('click', () => {
-      try {
-        exactInputEl.showPicker();
-      } catch {
-        exactInputEl.focus();
-      }
-      if (!exactInputEl.showPicker) exactInputEl.focus();
-    });
-    slotChipsEl.append(other);
+    if (editorMode !== 'offered-only') {
+      const other = document.createElement('button');
+      other.type = 'button';
+      other.className = 'slot-chip other';
+      other.textContent = 'Other…';
+      other.addEventListener('click', () => {
+        try {
+          exactInputEl.showPicker();
+        } catch {
+          exactInputEl.focus();
+        }
+        if (!exactInputEl.showPicker) exactInputEl.focus();
+      });
+      slotChipsEl.append(other);
+    }
 
     chosenListEl.replaceChildren();
     for (const slot of slots) {
@@ -216,6 +223,11 @@ export function createCalendar({
       chosenListEl.append(item);
     }
     setError('');
+  }
+
+  if (editorMode === 'offered-only') {
+    exactInputEl.closest('.custom-row').hidden = true;
+    rangeStartEl.closest('.custom-row').hidden = true;
   }
 
   addExactEl.addEventListener('click', () => {
