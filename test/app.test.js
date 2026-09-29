@@ -2,9 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildHeatmap,
+  buildAvailabilityByDay,
   buildOptionsFromDays,
   buildShareLink,
   buildViewModel,
+  assignTileColors,
+  dayAvailabilityLabel,
   expandTimeRange,
   findDuplicateKeys,
   formatOption,
@@ -13,6 +16,7 @@ import {
   isValidDateFormat,
   isValidTimeFormat,
   normalizeOptions,
+  PERSON_COLORS,
   validatePollInput,
   validateResponseInput,
 } from '../js/app.js';
@@ -219,4 +223,41 @@ test('buildHeatmap arranges dates as columns and times as rows', () => {
   assert.equal(heat.columns[1].cells[1], null);
   assert.deepEqual(heat.columns[1].cells[2], { count: 0, voters: [], best: false });
   assert.equal(heat.maxCount, 2);
+});
+
+test('PERSON_COLORS leads with the approved palette order', () => {
+  assert.deepEqual(PERSON_COLORS.slice(0, 4),
+    ['#96700f', '#3a6b35', '#5a4a8a', '#8a3038']);
+});
+
+test('assignTileColors maps unique names in first-seen order and cycles the palette', () => {
+  const colors = assignTileColors(['Ana', 'Ben', 'Ana', 'Chloe', 'Dan', 'Eve']);
+  assert.equal(colors.get('Ana'), '#96700f');
+  assert.equal(colors.get('Ben'), '#3a6b35');
+  assert.equal(colors.get('Chloe'), '#5a4a8a');
+  assert.equal(colors.get('Dan'), '#8a3038');
+  assert.equal(colors.get('Eve'), '#96700f');
+  assert.equal(colors.size, 5);
+});
+
+test('dayAvailabilityLabel renders the 9-17 window for day-only options', () => {
+  assert.equal(dayAvailabilityLabel(null), '09:00–17:00');
+  assert.equal(dayAvailabilityLabel(undefined), '09:00–17:00');
+  assert.equal(dayAvailabilityLabel('junk'), '09:00–17:00');
+  assert.equal(dayAvailabilityLabel('18:00'), '18:00');
+});
+
+test('buildAvailabilityByDay collects deduped per-day voters', () => {
+  const options = [
+    { date: '2026-09-28', time: '18:00', label: null },
+    { date: '2026-09-28', time: '19:00', label: null },
+    { date: '2026-09-29', time: null, label: null },
+  ];
+  const responses = [
+    { name: 'Ana', selected: [0, 2], created_at: '2026-01-01' },
+    { name: 'Ben', selected: [0, 1], created_at: '2026-01-02' },
+  ];
+  const byDay = buildAvailabilityByDay(buildViewModel(options, responses).rows);
+  assert.deepEqual([...byDay.get('2026-09-28').names], ['Ana', 'Ben']);
+  assert.deepEqual([...byDay.get('2026-09-29').names], ['Ana']);
 });

@@ -206,6 +206,42 @@ export function buildHeatmap(model) {
   return { times, columns, maxCount };
 }
 
+export const PERSON_COLORS = ['#96700f', '#3a6b35', '#5a4a8a', '#8a3038'];
+
+export function assignTileColors(names) {
+  const colors = new Map();
+  for (const name of names) {
+    if (colors.has(name)) continue;
+    colors.set(name, PERSON_COLORS[colors.size % PERSON_COLORS.length]);
+  }
+  return colors;
+}
+
+export function dayAvailabilityLabel(time) {
+  return isValidTimeFormat(time) ? time : '09:00–17:00';
+}
+
+export function buildAvailabilityByDay(rows) {
+  const byDay = new Map();
+  const seenByDay = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const date = row?.raw?.date;
+    if (typeof date !== 'string') continue;
+    if (!byDay.has(date)) {
+      byDay.set(date, { names: [] });
+      seenByDay.set(date, new Set());
+    }
+    const day = byDay.get(date);
+    const seen = seenByDay.get(date);
+    for (const name of Array.isArray(row?.voters) ? row.voters : []) {
+      if (seen.has(name)) continue;
+      seen.add(name);
+      day.names.push(name);
+    }
+  }
+  return byDay;
+}
+
 export function getClient() {
   if (client !== undefined) return client;
   const root = globalThis.window ?? globalThis;
