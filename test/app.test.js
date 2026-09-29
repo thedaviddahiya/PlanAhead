@@ -14,6 +14,7 @@ import {
   formatOption,
   generatePollId,
   getClient,
+  getClientWithPassword,
   isValidDateFormat,
   isValidTimeFormat,
   mapCreationError,
@@ -309,4 +310,17 @@ test('buildAvailabilityByDay ignores invalid selected indexes', () => {
   const byDay = buildAvailabilityByDay(buildViewModel(options, responses).rows);
   assert.deepEqual([...byDay.get('2026-09-28').names], ['Ana']);
   assert.deepEqual([...byDay.get('2026-09-29').names], []);
+});
+
+test('getClientWithPassword passes the password as a global client header', () => {
+  window.supabase = {
+    createClient: (url, key, options) => ({ url, key, options }),
+  };
+  window.PLANAHEAD_CONFIG = { supabaseUrl: 'https://db.example', supabaseAnonKey: 'secret' };
+  const created = getClientWithPassword('let-me-in');
+  assert.equal(created.url, 'https://db.example');
+  assert.equal(created.key, 'secret');
+  assert.equal(created.options?.global?.headers['x-planahead-password'], 'let-me-in');
+  assert.equal(getClientWithPassword(''), null);
+  assert.equal(getClientWithPassword(null), null);
 });

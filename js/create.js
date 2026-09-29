@@ -5,6 +5,7 @@ import {
   formatOption,
   generatePollId,
   getClient,
+  getClientWithPassword,
   mapCreationError,
   normalizeOptions,
   validatePollInput,
@@ -139,13 +140,12 @@ form.addEventListener('submit', async (event) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const id = generatePollId();
     try {
-      const { error } = await client.from('polls').insert({
+      const insertClient = getClientWithPassword(creationPasswordInput.value);
+      const { error } = await insertClient.from('polls').insert({
         id,
         title: titleInput.value.trim(),
         description: descriptionInput.value.trim() || null,
         options,
-      }, {
-        headers: { 'x-planahead-password': creationPasswordInput.value },
       });
       if (!error) {
         localStorage.setItem('planahead-creation-password', creationPasswordInput.value);

@@ -292,3 +292,21 @@ export function getClient() {
   client = supabase.createClient(url, key);
   return client;
 }
+
+export function getClientWithPassword(password) {
+  if (typeof password !== 'string' || !password) return null;
+  const root = globalThis.window ?? globalThis;
+  const config = root.PLANAHEAD_CONFIG;
+  const url = config?.supabaseUrl;
+  const key = config?.supabaseAnonKey;
+  if (!url || !key || url === '<URL>' || key === '<KEY>') {
+    return null;
+  }
+  const supabase = root.supabase;
+  if (!supabase || typeof supabase.createClient !== 'function') {
+    return null;
+  }
+  return supabase.createClient(url, key, {
+    global: { headers: { 'x-planahead-password': password } },
+  });
+}
