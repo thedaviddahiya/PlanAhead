@@ -242,6 +242,23 @@ export function buildAvailabilityByDay(rows) {
   return byDay;
 }
 
+export function bestDaysByDay(rows) {
+  const votersByDay = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const date = row?.raw?.date;
+    if (typeof date !== 'string') continue;
+    if (!votersByDay.has(date)) votersByDay.set(date, new Set());
+    for (const name of Array.isArray(row?.voters) ? row.voters : []) {
+      votersByDay.get(date).add(name);
+    }
+  }
+  const max = Math.max(0, ...[...votersByDay.values()].map((voters) => voters.size));
+  if (max === 0) return new Set();
+  return new Set([...votersByDay.entries()]
+    .filter(([, voters]) => voters.size === max)
+    .map(([date]) => date));
+}
+
 export function mapCreationError(codeOrMessage) {
   const value = String(codeOrMessage ?? '');
   if (value === '42501' || value.includes('new row violates row-level security policy')) {

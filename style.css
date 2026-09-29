@@ -298,6 +298,50 @@ legend {
   background: var(--accent);
 }
 
+.cal-tiles {
+  display: flex;
+  gap: 0.15rem;
+  min-height: 0.45rem;
+}
+
+.cal-tile {
+  width: 0.55rem;
+  height: 0.42rem;
+  border-radius: 0.15rem;
+}
+
+.cal-best-star {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.3rem;
+  color: var(--accent-deep);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.tile-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  list-style: none;
+}
+
+.tile-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tile-legend-swatch {
+  width: 0.65rem;
+  height: 0.5rem;
+  border-radius: 0.15rem;
+}
+
 /* ------------------------------------------------------------
    Day popover
    ------------------------------------------------------------ */
@@ -317,6 +361,30 @@ legend {
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.day-readout {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.7rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.day-readout-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.day-readout-row strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.day-readout-row span {
+  text-align: right;
 }
 
 .slot-chips {
