@@ -252,7 +252,7 @@ function renderResults(model) {
     const label = document.createElement('th');
     label.scope = 'row';
     label.className = 'time-label';
-    label.textContent = time ?? 'Any time';
+    label.textContent = time === null ? dayAvailabilityLabel(null) : time;
     row.append(label);
     for (const column of heat.columns) {
       row.append(renderHeatCell(column.cells[timeIndex], heat.maxCount));
