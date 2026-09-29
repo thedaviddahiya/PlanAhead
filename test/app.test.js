@@ -244,6 +244,8 @@ test('dayAvailabilityLabel renders the 9-17 window for day-only options', () => 
   assert.equal(dayAvailabilityLabel(null), '09:00–17:00');
   assert.equal(dayAvailabilityLabel(undefined), '09:00–17:00');
   assert.equal(dayAvailabilityLabel('junk'), '09:00–17:00');
+  assert.equal(dayAvailabilityLabel('24:00'), '09:00–17:00');
+  assert.equal(dayAvailabilityLabel('12:60'), '09:00–17:00');
   assert.equal(dayAvailabilityLabel('18:00'), '18:00');
 });
 
@@ -260,4 +262,18 @@ test('buildAvailabilityByDay collects deduped per-day voters', () => {
   const byDay = buildAvailabilityByDay(buildViewModel(options, responses).rows);
   assert.deepEqual([...byDay.get('2026-09-28').names], ['Ana', 'Ben']);
   assert.deepEqual([...byDay.get('2026-09-29').names], ['Ana']);
+});
+
+test('buildAvailabilityByDay ignores invalid selected indexes', () => {
+  const options = [
+    { date: '2026-09-28', time: '18:00', label: null },
+    { date: '2026-09-28', time: '19:00', label: null },
+    { date: '2026-09-29', time: null, label: null },
+  ];
+  const responses = [
+    { name: 'Ana', selected: [0, 7, -1, 'x'], created_at: '2026-01-01' },
+  ];
+  const byDay = buildAvailabilityByDay(buildViewModel(options, responses).rows);
+  assert.deepEqual([...byDay.get('2026-09-28').names], ['Ana']);
+  assert.deepEqual([...byDay.get('2026-09-29').names], []);
 });
