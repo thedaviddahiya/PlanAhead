@@ -6,6 +6,7 @@ import {
   generatePollId,
   getClient,
   isValidTimeFormat,
+  mapCreationError,
   normalizeOptions,
   validatePollInput,
 } from './app.js';
@@ -23,6 +24,7 @@ const MAX_DOTS = 4;
 
 const titleInput = document.querySelector('#title');
 const descriptionInput = document.querySelector('#description');
+const creationPasswordInput = document.querySelector('#create-password');
 const calGrid = document.querySelector('#cal-grid');
 const calMonth = document.querySelector('#cal-month');
 const calPrev = document.querySelector('#cal-prev');
@@ -372,6 +374,7 @@ form.addEventListener('submit', async (event) => {
       options,
     }),
   ];
+  if (!creationPasswordInput.value) errors.push('Please enter the creation password.');
   if (errors.length > 0) {
     showError(errors);
     return;
@@ -387,13 +390,22 @@ form.addEventListener('submit', async (event) => {
         title: titleInput.value.trim(),
         description: descriptionInput.value.trim() || null,
         options,
+      }, {
+        headers: { 'x-planahead-password': creationPasswordInput.value },
       });
       if (!error) {
+        localStorage.setItem('planahead-creation-password', creationPasswordInput.value);
         const link = buildShareLink(id);
         shareLink.textContent = link;
         openPollLink.href = link;
         form.closest('.card').hidden = true;
         resultPanel.hidden = false;
+        return;
+      }
+      const mappedError = mapCreationError(error.code ?? error.message);
+      if (mappedError) {
+        showError(mappedError);
+        submitButton.disabled = false;
         return;
       }
       if (error.code !== '23505') {
@@ -402,6 +414,12 @@ form.addEventListener('submit', async (event) => {
         return;
       }
     } catch (error) {
+      const mappedError = mapCreationError(error?.code ?? error?.message);
+      if (mappedError) {
+        showError(mappedError);
+        submitButton.disabled = false;
+        return;
+      }
       if (error?.code === '23505') continue;
       showError(error?.message || 'Could not create poll.');
       submitButton.disabled = false;
@@ -419,6 +437,8 @@ viewYear = today.getFullYear();
 viewMonth = today.getMonth();
 renderCalendar();
 renderSummary();
+
+creationPasswordInput.value = localStorage.getItem('planahead-creation-password') ?? '';
 
 if (!client) {
   setupNotice.hidden = false;

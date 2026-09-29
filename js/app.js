@@ -242,6 +242,14 @@ export function buildAvailabilityByDay(rows) {
   return byDay;
 }
 
+export function mapCreationError(codeOrMessage) {
+  const value = String(codeOrMessage ?? '');
+  if (value === '42501' || value.includes('new row violates row-level security policy')) {
+    return 'That password was not accepted.';
+  }
+  return null;
+}
+
 export function getClient() {
   if (client !== undefined) return client;
   const root = globalThis.window ?? globalThis;

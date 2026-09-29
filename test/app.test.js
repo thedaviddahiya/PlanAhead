@@ -15,6 +15,7 @@ import {
   getClient,
   isValidDateFormat,
   isValidTimeFormat,
+  mapCreationError,
   normalizeOptions,
   PERSON_COLORS,
   validatePollInput,
@@ -23,6 +24,15 @@ import {
 
 const validDate = '2026-09-29';
 const validOption = { date: '2026-09-29', time: '18:00', label: null };
+
+test('mapCreationError flags the RLS password rejection', () => {
+  assert.equal(mapCreationError('42501'), 'That password was not accepted.');
+  assert.equal(
+    mapCreationError('new row violates row-level security policy for table "polls"'),
+    'That password was not accepted.');
+  assert.equal(mapCreationError('23505'), null);
+  assert.equal(mapCreationError('Could not reach the database.'), null);
+});
 
 test('generatePollId uses the required alphabet and default length', () => {
   const alphabet = '23456789abcdefghjkmnpqrstuvwxyz';
