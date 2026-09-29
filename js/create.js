@@ -241,6 +241,7 @@ function renderPopover() {
 }
 
 addExactButton.addEventListener('click', () => {
+  if (!popoverDate) return;
   const value = exactTimeInput.value;
   if (!isValidTimeFormat(value)) {
     showPopoverError('Enter a time like 18:45.');
@@ -258,6 +259,7 @@ addExactButton.addEventListener('click', () => {
 });
 
 addRangeButton.addEventListener('click', () => {
+  if (!popoverDate) return;
   const slots = expandTimeRange(rangeStartInput.value, rangeEndInput.value);
   if (!slots) {
     showPopoverError('Use two valid times, e.g. 17:30 – 20:30.');
@@ -272,6 +274,7 @@ addRangeButton.addEventListener('click', () => {
 });
 
 clearDayButton.addEventListener('click', () => {
+  if (!popoverDate) return;
   daySlots.delete(popoverDate);
   renderPopover();
   renderCalendar();
@@ -285,11 +288,11 @@ document.addEventListener('keydown', (event) => {
 });
 document.addEventListener('click', (event) => {
   if (popover.hidden) return;
-  if (event.target instanceof Node && !popover.contains(event.target)
-    && !(event.target instanceof Element && event.target.closest('.cal-day'))) {
-    closePopover();
-  }
-});
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  if (target.closest('#day-popover') || target.closest('.cal-day')) return;
+  closePopover();
+}, true);
 
 function renderSummary() {
   optionsList.replaceChildren();
