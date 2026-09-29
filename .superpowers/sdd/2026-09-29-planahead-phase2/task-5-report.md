@@ -37,3 +37,14 @@ Implemented the respond-page wall calendar integration.
 
 - Command: `node --check js/app.js && node --check js/calendar.js && node --check js/poll.js && node --test`
 - Output: 23 tests, 23 passed, 0 failed.
+
+## Fix Round 2
+
+### Change
+
+- Added a `data-date` attribute to every active shared-calendar day cell and changed respond-page date lookup to use that explicit association instead of parsing the aria label. This keeps tiles and stars working for selected days whose labels include a chosen-count suffix.
+
+### Verification
+
+- Command: `node --check js/calendar.js && node --check js/poll.js && node --test`
+- Output: 23 tests, 23 passed, 0 failed.

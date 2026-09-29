@@ -101,6 +101,7 @@ export function createCalendar({
       const cell = document.createElement('button');
       cell.type = 'button';
       cell.className = 'cal-day';
+      cell.dataset.date = dateIso;
       if (slots.length > 0) cell.classList.add('filled');
       cell.textContent = String(day);
       cell.setAttribute('aria-label',

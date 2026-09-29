@@ -13,8 +13,6 @@ import {
 import { createCalendar } from './calendar.js';
 
 const WEEKDAYS_MIN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'];
 const DAY_ONLY_SLOT = '09:00–17:00';
 
 const pollId = new URLSearchParams(location.search).get('poll');
@@ -37,7 +35,6 @@ const title = document.querySelector('#poll-title');
 const description = document.querySelector('#poll-description');
 const tileLegend = document.querySelector('#tile-legend');
 const dayReadout = document.querySelector('#day-readout');
-const monthLabel = document.querySelector('#cal-month');
 
 let calendar;
 let currentModel;
@@ -57,12 +54,7 @@ function optionsForDay(date) {
 }
 
 function dateFromCalendarCell(cell) {
-  const monthMatch = /^(.+) (\d{4})$/.exec(monthLabel.textContent);
-  const dayMatch = / (\d+)$/.exec(cell.getAttribute('aria-label') ?? '');
-  if (!monthMatch || !dayMatch) return null;
-  const month = MONTHS.indexOf(monthMatch[1]);
-  if (month < 0) return null;
-  return `${monthMatch[2]}-${String(month + 1).padStart(2, '0')}-${String(Number(dayMatch[1])).padStart(2, '0')}`;
+  return cell.dataset.date || null;
 }
 
 function renderLegend(names) {
