@@ -1,3 +1,5 @@
+create extension if not exists pgcrypto;
+
 create table if not exists public.app_config (
   key text primary key,
   value text not null
@@ -14,7 +16,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
   select candidate is not null
     and candidate <> ''
