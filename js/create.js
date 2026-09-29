@@ -63,6 +63,10 @@ function showError(messages) {
   errorBox.textContent = Array.isArray(messages) ? messages.join('\n') : messages;
 }
 
+creationPasswordInput.addEventListener('invalid', () => {
+  showError(creationPasswordInput.validationMessage);
+});
+
 function showPopoverError(message) {
   popoverError.textContent = message;
 }
