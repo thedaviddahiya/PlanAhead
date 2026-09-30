@@ -21,7 +21,8 @@ import {
   normalizeOptions,
   buildExtraNamesBySlot,
   buildOptionNamesBySlot,
-  rankTopSlots,
+  buildSlotCandidates,
+  rankBestSlots,
   offeredTimes,
   PERSON_COLORS,
   rulerSlots,
@@ -422,22 +423,41 @@ test('buildExtraNamesBySlot groups extra availability by date and slot', () => {
   assert.equal(grouped.get('2026-09-28'), undefined);
 });
 
-test('rankTopSlots orders offered slots by availability, then date, then time', () => {
+test('buildSlotCandidates unites offered rows with extra slot picks', () => {
   const rows = [
-    { raw: { date: '2026-09-29', time: '18:00' }, count: 1, voters: ['Ana'] },
-    { raw: { date: '2026-09-28', time: '19:00' }, count: 2, voters: ['Ana', 'Ben'] },
-    { raw: { date: '2026-09-28', time: '18:00' }, count: 2, voters: ['Ben', 'Ana'] },
-    { raw: { date: '2026-09-30', time: null }, count: 0, voters: [] },
+    { raw: { date: '2026-09-28', time: '18:00' } },
+    { raw: { date: '2026-09-28', time: null } },
   ];
-  const ranked = rankTopSlots(rows, 2);
-  assert.deepEqual(ranked.map((slot) => [slot.date, slot.time]), [
-    ['2026-09-28', '18:00'],
-    ['2026-09-28', '19:00'],
-    ['2026-09-29', '18:00'],
-    ['2026-09-30', null],
+  const extras = new Map([
+    ['2026-09-28', new Map([['20:15', ['Ana']], ['', ['Ben']]])],
+    ['2026-10-01', new Map([['08:30', ['Chloe']], ['', ['Dan']]])],
+  ]);
+  const candidates = buildSlotCandidates(rows, extras);
+  assert.deepEqual(candidates, [
+    { date: '2026-09-28', time: '18:00' },
+    { date: '2026-09-28', time: null },
+    { date: '2026-09-28', time: '20:15' },
+    { date: '2026-10-01', time: '08:30' },
+    { date: '2026-10-01', time: null },
+  ]);
+});
+
+test('rankBestSlots ranks candidate slots by availability, everyone flag, filters empty', () => {
+  const candidates = [
+    { date: '2026-09-28', time: '18:00' },
+    { date: '2026-09-28', time: '20:15' },
+    { date: '2026-09-28', time: null },
+  ];
+  const namesForSlot = (date, time) =>
+    time === '18:00' ? ['Ben', 'Ana'] : time === null ? ['Ana'] : ['Chloe'];
+  const ranked = rankBestSlots(candidates, namesForSlot, 2);
+  assert.deepEqual(ranked.map((slot) => [slot.date, slot.time, slot.count]), [
+    ['2026-09-28', '18:00', 2],
+    ['2026-09-28', null, 1],
+    ['2026-09-28', '20:15', 1],
   ]);
   assert.deepEqual(ranked[0].names, ['Ben', 'Ana']);
   assert.equal(ranked[0].everyone, true);
-  assert.equal(ranked[2].everyone, false);
-  assert.equal(ranked[3].everyone, false);
+  assert.equal(ranked[1].everyone, false);
+  assert.deepEqual(rankBestSlots(candidates, () => [], 2), []);
 });

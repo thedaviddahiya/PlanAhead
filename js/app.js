@@ -402,20 +402,41 @@ export function buildExtraNamesBySlot(responses) {
   return byDate;
 }
 
-export function rankTopSlots(rows, respondentCount) {
-  return (Array.isArray(rows) ? rows : [])
-    .map((row) => ({
-      date: typeof row?.raw?.date === 'string' ? row.raw.date : null,
-      time: row?.raw?.time ?? null,
-      count: Number.isInteger(row?.count) ? row.count : 0,
-      names: Array.isArray(row?.voters) ? [...row.voters] : [],
-    }))
-    .filter((slot) => slot.date !== null)
+export function buildSlotCandidates(rows, extraNamesBySlot) {
+  const candidates = [];
+  const seen = new Set();
+  const add = (date, time) => {
+    const key = `${date}|${time ?? ''}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    candidates.push({ date, time });
+  };
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (typeof row?.raw?.date === 'string') add(row.raw.date, row.raw?.time ?? null);
+  }
+  const extras = extraNamesBySlot instanceof Map ? extraNamesBySlot : new Map();
+  for (const [date, slots] of extras) {
+    if (typeof date !== 'string' || !(slots instanceof Map)) continue;
+    for (const timeKey of slots.keys()) {
+      add(date, timeKey === '' ? null : timeKey);
+    }
+  }
+  return candidates;
+}
+
+export function rankBestSlots(candidates, namesForSlot, respondentCount) {
+  const ranked = (Array.isArray(candidates) ? candidates : [])
+    .filter((slot) => typeof slot?.date === 'string')
+    .map((slot) => {
+      const names = namesForSlot?.(slot.date, slot.time) ?? [];
+      return { ...slot, count: Array.isArray(names) ? names.length : 0, names: Array.isArray(names) ? [...names] : [] };
+    })
+    .filter((slot) => slot.count > 0)
     .sort((a, b) => b.count - a.count
-      || String(a.date).localeCompare(String(b.date))
-      || String(a.time ?? '').localeCompare(String(b.time ?? '')))
-    .map((slot) => ({
-      ...slot,
-      everyone: respondentCount > 0 && slot.count === respondentCount,
-    }));
+      || a.date.localeCompare(b.date)
+      || String(a.time ?? '').localeCompare(String(b.time ?? '')));
+  return ranked.map((slot) => ({
+    ...slot,
+    everyone: respondentCount > 0 && slot.count === respondentCount,
+  }));
 }

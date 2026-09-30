@@ -6,8 +6,9 @@ import {
   buildViewModel,
   dayAvailabilityLabel,
   formatOption,
+  buildSlotCandidates,
+  rankBestSlots,
   getClient,
-  rankTopSlots,
   splitSelectionsFromDays,
   validateResponseInput,
 } from './app.js';
@@ -131,9 +132,11 @@ function renderTiles(model, responses) {
 function renderBestPanel() {
   bestList.replaceChildren();
   if (!currentModel) return;
-  const entries = rankTopSlots(currentModel.rows, currentModel.names.length)
-    .filter((entry) => entry.count > 0)
-    .slice(0, 5);
+  const entries = rankBestSlots(
+    buildSlotCandidates(currentModel.rows, slotExtras),
+    (date, time) => orderedNamesForSlot(date, time),
+    currentModel.names.length
+  ).slice(0, 5);
   for (const entry of entries) {
     const row = document.createElement('div');
     row.className = 'best-row';
@@ -147,7 +150,7 @@ function renderBestPanel() {
     detail.textContent = entry.everyone ? 'Everyone' : `${entry.count} of ${currentModel.names.length}`;
     const people = document.createElement('span');
     people.className = 'day-readout-people';
-    for (const name of orderedNamesForSlot(entry.date, entry.time)) {
+    for (const name of entry.names) {
       const dot = document.createElement('span');
       dot.className = 'person-dot';
       dot.style.backgroundColor = nameColors.get(name);
