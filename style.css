@@ -398,6 +398,11 @@ legend {
 }
 
 .ruler-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
   min-width: 0;
   min-height: 2.5rem;
   padding: 0;
@@ -406,6 +411,29 @@ legend {
   background: #fff;
   cursor: pointer;
   touch-action: none;
+}
+
+.block-dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12rem;
+  min-height: 0.3rem;
+  width: 100%;
+}
+
+.block-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 65%);
+}
+
+.ruler-hint {
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 
 .ruler-block:hover:not(:disabled) {
@@ -459,6 +487,79 @@ legend {
 
 .day-readout-row span {
   text-align: right;
+}
+
+.day-readout-people {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.person-dot {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+}
+
+.best-panel {
+  margin: 0.8rem 0 0.3rem;
+}
+
+#best-toggle {
+  min-height: 2.25rem;
+  padding: 0.3rem 0.7rem;
+  border-color: var(--line-strong);
+  color: var(--accent-deep);
+  background: var(--surface);
+  font-size: 0.85rem;
+}
+
+#best-toggle:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.best-list {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.best-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--accent-soft);
+  font-size: 0.85rem;
+}
+
+.best-row.best-everyone {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.best-row.best-everyone strong {
+  color: #fff;
+}
+
+.best-row strong {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.best-row > span:nth-child(2) {
+  flex: 1;
+}
+
+.best-meta {
+  color: inherit;
+  white-space: nowrap;
 }
 
 .slot-chips {

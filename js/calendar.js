@@ -22,6 +22,7 @@ export function createCalendar({
   clearEl,
   editorMode = 'full',
   slotsForDate,
+  peopleForSlot,
 }) {
   const daySlots = new Map();
   let viewYear;
@@ -154,6 +155,21 @@ export function createCalendar({
     renderRuler();
   }
 
+  function dotsFor(dateIso, time) {
+    if (typeof peopleForSlot !== 'function') return null;
+    const colors = peopleForSlot(dateIso, time);
+    if (!Array.isArray(colors) || colors.length === 0) return null;
+    const wrap = document.createElement('span');
+    wrap.className = 'block-dots';
+    for (const color of colors) {
+      const dot = document.createElement('span');
+      dot.className = 'block-dot';
+      dot.style.backgroundColor = color;
+      wrap.append(dot);
+    }
+    return wrap;
+  }
+
   function renderRuler() {
     if (!selectedDate) {
       rulerTitleEl.textContent = 'Select a day to set its times';
@@ -188,6 +204,8 @@ export function createCalendar({
       block.setAttribute('aria-pressed', String(on));
       block.setAttribute('aria-label', slot);
       block.dataset.time = slot;
+      const dots = dotsFor(selectedDate, slot);
+      if (dots) block.append(dots);
       rulerBlocksEl.append(block);
     }
 
@@ -203,6 +221,8 @@ export function createCalendar({
         chip.textContent = slot;
         chip.dataset.time = slot;
         chip.dataset.extra = '1';
+        const dots = dotsFor(selectedDate, slot);
+        if (dots) chip.append(dots);
         rulerExtrasEl.append(chip);
       }
     }

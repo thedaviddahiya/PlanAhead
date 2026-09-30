@@ -1,9 +1,13 @@
 import {
   assignTileColors,
   buildAvailabilityByDay,
+  buildExtraNamesBySlot,
+  buildOptionNamesBySlot,
   buildViewModel,
   dayAvailabilityLabel,
+  formatOption,
   getClient,
+  rankTopSlots,
   splitSelectionsFromDays,
   validateResponseInput,
 } from './app.js';
@@ -28,6 +32,36 @@ const dayReadout = document.querySelector('#day-readout');
 
 let calendar;
 let currentModel;
+let slotOptions = new Map();
+let slotExtras = new Map();
+let nameColors = new Map();
+let bestOpen = false;
+
+function orderedNamesForSlot(date, time) {
+  const timeKey = time ?? '';
+  const names = new Set();
+  for (const name of slotOptions.get(date)?.get(timeKey) ?? []) names.add(name);
+  for (const name of slotExtras.get(date)?.get(timeKey) ?? []) names.add(name);
+  if (time !== null && time >= '09:00' && time < '17:00') {
+    for (const name of slotOptions.get(date)?.get('') ?? []) names.add(name);
+    for (const name of slotExtras.get(date)?.get('') ?? []) names.add(name);
+  }
+  const ordered = [];
+  const seen = new Set();
+  for (const name of [...(currentModel?.names ?? []), ...names]) {
+    if (names.has(name) && !seen.has(name)) {
+      seen.add(name);
+      ordered.push(name);
+    }
+  }
+  return ordered;
+}
+
+function peopleForSlot(date, time) {
+  return orderedNamesForSlot(date, time)
+    .map((name) => nameColors.get(name))
+    .filter((color) => Boolean(color));
+}
 
 function showNotFound(message, canRetry = false) {
   notfoundMessage.textContent = message;
@@ -61,8 +95,14 @@ function renderLegend(names) {  tileLegend.replaceChildren();
   }
 }
 
-function renderTiles(model) {
+let latestResponses = [];
+
+function renderTiles(model, responses) {
   currentModel = model;
+  if (responses) latestResponses = responses;
+  slotOptions = buildOptionNamesBySlot(model.rows);
+  slotExtras = buildExtraNamesBySlot(latestResponses);
+  nameColors = assignTileColors(model.names);
   const availability = buildAvailabilityByDay(model.rows, model.extraByDay);
   const colors = assignTileColors(model.names);
   for (const cell of document.querySelectorAll('#cal-grid .cal-day:not(.dim)')) {
@@ -85,7 +125,47 @@ function renderTiles(model) {
     }
   }
   renderLegend(model.names);
+  renderBestPanel();
 }
+
+function renderBestPanel() {
+  bestList.replaceChildren();
+  if (!currentModel) return;
+  const entries = rankTopSlots(currentModel.rows, currentModel.names.length)
+    .filter((entry) => entry.count > 0);
+  for (const entry of entries) {
+    const row = document.createElement('div');
+    row.className = 'best-row';
+    if (entry.everyone) row.classList.add('best-everyone');
+    const label = document.createElement('strong');
+    label.textContent = dayAvailabilityLabel(entry.time);
+    const date = document.createElement('span');
+    date.textContent = formatOption({ date: entry.date, time: null });
+    const detail = document.createElement('span');
+    detail.className = 'best-meta';
+    detail.textContent = entry.everyone ? 'Everyone' : `${entry.count} of ${currentModel.names.length}`;
+    const people = document.createElement('span');
+    people.className = 'day-readout-people';
+    for (const name of orderedNamesForSlot(entry.date, entry.time)) {
+      const dot = document.createElement('span');
+      dot.className = 'person-dot';
+      dot.style.backgroundColor = nameColors.get(name);
+      dot.title = name;
+      people.append(dot);
+    }
+    people.append(detail);
+    row.append(label, date, people);
+    bestList.append(row);
+  }
+}
+
+const bestToggle = document.querySelector('#best-toggle');
+const bestList = document.querySelector('#best-list');
+bestToggle.addEventListener('click', () => {
+  bestOpen = !bestOpen;
+  bestToggle.setAttribute('aria-expanded', String(bestOpen));
+  bestList.hidden = !bestOpen;
+});
 
 let selectedDate = null;
 
@@ -97,22 +177,36 @@ function renderDayReadout(date) {
   dayReadout.replaceChildren();
   const options = optionsForDay(date);
   if (options.length === 0) return;
-  const byTime = new Map();
+  const seen = new Set();
   for (const option of options) {
     const time = option.time ?? null;
+    const key = String(time);
+    if (seen.has(key)) continue;
+    seen.add(key);
     const row = document.createElement('div');
     row.className = 'day-readout-row';
     const label = document.createElement('strong');
     label.textContent = dayAvailabilityLabel(time);
-    const names = currentModel?.rows
-      .filter((entry) => entry.raw?.date === date && (entry.raw?.time ?? null) === time)
-      .flatMap((entry) => entry.voters) ?? [];
+    const names = orderedNamesForSlot(date, time);
     const people = document.createElement('span');
-    people.textContent = names.length ? names.join(', ') : 'No responses yet';
+    people.className = 'day-readout-people';
+    if (names.length === 0) {
+      people.textContent = 'No responses yet';
+    } else {
+      for (const name of names) {
+        const dot = document.createElement('span');
+        dot.className = 'person-dot';
+        dot.style.backgroundColor = nameColors.get(name);
+        dot.title = name;
+        people.append(dot);
+      }
+      const text = document.createElement('span');
+      text.textContent = names.join(', ');
+      people.append(text);
+    }
     row.append(label, people);
-    byTime.set(String(time), row);
+    dayReadout.append(row);
   }
-  for (const row of byTime.values()) dayReadout.append(row);
 }
 
 calendar = createCalendar({
@@ -133,6 +227,7 @@ calendar = createCalendar({
       .map((option) => option.time),
     dayOnly: optionsForDay(date).some((option) => option.time === null),
   }),
+  peopleForSlot,
 });
 
 calendar.onChange(() => {
@@ -182,7 +277,7 @@ async function loadResults() {
     .order('created_at');
   if (error) throw error;
   const model = buildViewModel(poll.options, data);
-  renderTiles(model);
+  renderTiles(model, data);
   setResultsStatus('');
 }
 

@@ -54,6 +54,10 @@
             <div class="cal-grid" id="cal-grid"></div>
           </div>
           <ul id="tile-legend" class="tile-legend" aria-label="Respondents"></ul>
+          <div id="best-panel" class="best-panel">
+            <button type="button" id="best-toggle" aria-expanded="false" aria-controls="best-list">Find best times</button>
+            <div id="best-list" class="best-list" hidden></div>
+          </div>
           <div class="ruler-panel" id="ruler-panel">
             <div class="ruler-head">
               <span id="ruler-title" aria-live="polite"></span>
@@ -66,6 +70,7 @@
             <div class="ruler-ticks" aria-hidden="true">
               <span>09:00</span><span>12:00</span><span>15:00</span><span>18:00</span><span>21:00</span>
             </div>
+            <div class="ruler-hint">Each block is 30 minutes · marks run 09:00–21:00</div>
             <div class="slot-chips" id="ruler-extras" hidden></div>
             <div id="day-readout" class="day-readout" aria-live="polite"></div>
           </div>

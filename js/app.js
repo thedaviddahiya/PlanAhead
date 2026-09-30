@@ -366,3 +366,56 @@ export function getClientWithPassword(password) {
     global: { headers: { 'x-planahead-password': password } },
   });
 }
+
+export function buildOptionNamesBySlot(rows) {
+  const byDate = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const date = typeof row?.raw?.date === 'string' ? row.raw.date : null;
+    if (!date) continue;
+    const timeKey = row?.raw?.time ?? '';
+    if (!byDate.has(date)) byDate.set(date, new Map());
+    const bySlot = byDate.get(date);
+    if (!bySlot.has(timeKey)) bySlot.set(timeKey, new Set());
+    for (const name of Array.isArray(row?.voters) ? row.voters : []) {
+      if (name) bySlot.get(timeKey).add(String(name));
+    }
+  }
+  return byDate;
+}
+
+export function buildExtraNamesBySlot(responses) {
+  const byDate = new Map();
+  for (const response of Array.isArray(responses) ? responses : []) {
+    if (!Array.isArray(response?.extra)) continue;
+    for (const entry of response.extra) {
+      const date = typeof entry?.date === 'string' ? entry.date : null;
+      if (!date || !Array.isArray(entry.times)) continue;
+      if (!byDate.has(date)) byDate.set(date, new Map());
+      const bySlot = byDate.get(date);
+      const times = entry.times.length === 0 ? [''] : entry.times;
+      for (const time of times) {
+        if (!bySlot.has(time)) bySlot.set(time, new Set());
+        if (response?.name) bySlot.get(time).add(String(response.name));
+      }
+    }
+  }
+  return byDate;
+}
+
+export function rankTopSlots(rows, respondentCount) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      date: typeof row?.raw?.date === 'string' ? row.raw.date : null,
+      time: row?.raw?.time ?? null,
+      count: Number.isInteger(row?.count) ? row.count : 0,
+      names: Array.isArray(row?.voters) ? [...row.voters] : [],
+    }))
+    .filter((slot) => slot.date !== null)
+    .sort((a, b) => b.count - a.count
+      || String(a.date).localeCompare(String(b.date))
+      || String(a.time ?? '').localeCompare(String(b.time ?? '')))
+    .map((slot) => ({
+      ...slot,
+      everyone: respondentCount > 0 && slot.count === respondentCount,
+    }));
+}

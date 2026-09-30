@@ -19,6 +19,9 @@ import {
   legacyExtraTimes,
   mapCreationError,
   normalizeOptions,
+  buildExtraNamesBySlot,
+  buildOptionNamesBySlot,
+  rankTopSlots,
   offeredTimes,
   PERSON_COLORS,
   rulerSlots,
@@ -388,4 +391,53 @@ test('buildAvailabilityByDay merges option voters with extra-day respondents', (
 
 test('dayAvailabilityLabel matches the day-only pseudo-slot label', () => {
   assert.equal(dayAvailabilityLabel(null), '09:00–17:00');
+});
+
+
+test('buildOptionNamesBySlot groups offered voters by date and slot', () => {
+  const rows = [
+    { raw: { date: '2026-09-28', time: '18:00' }, voters: ['Ana', 'Ben'] },
+    { raw: { date: '2026-09-28', time: '18:00' }, voters: ['Chloe', 'Ana'] },
+    { raw: { date: '2026-09-28', time: '19:00' }, voters: [] },
+    { raw: { date: '2026-09-29', time: null }, voters: ['Dan'] },
+    { raw: { junk: true }, voters: ['Lost'] },
+  ];
+  const grouped = buildOptionNamesBySlot(rows);
+  assert.deepEqual([...grouped.get('2026-09-28').get('18:00')], ['Ana', 'Ben', 'Chloe']);
+  assert.equal(grouped.get('2026-09-28').get('19:00').size, 0);
+  assert.deepEqual([...grouped.get('2026-09-29').get('')], ['Dan']);
+  assert.equal(grouped.size, 2);
+});
+
+test('buildExtraNamesBySlot groups extra availability by date and slot', () => {
+  const responses = [
+    { name: 'Ana', selected: [], extra: [{ date: '2026-09-30', times: ['08:30'] }, { date: '2026-10-01', times: [] }] },
+    { name: 'Ben', selected: [0], extra: [{ date: '2026-09-30', times: ['08:30'] }] },
+    { name: 'Chloe', selected: [], extra: [] },
+    { name: 'Junk', selected: [], extra: 'not-an-array' },
+  ];
+  const grouped = buildExtraNamesBySlot(responses);
+  assert.deepEqual([...grouped.get('2026-09-30').get('08:30')], ['Ana', 'Ben']);
+  assert.deepEqual([...grouped.get('2026-10-01').get('')], ['Ana']);
+  assert.equal(grouped.get('2026-09-28'), undefined);
+});
+
+test('rankTopSlots orders offered slots by availability, then date, then time', () => {
+  const rows = [
+    { raw: { date: '2026-09-29', time: '18:00' }, count: 1, voters: ['Ana'] },
+    { raw: { date: '2026-09-28', time: '19:00' }, count: 2, voters: ['Ana', 'Ben'] },
+    { raw: { date: '2026-09-28', time: '18:00' }, count: 2, voters: ['Ben', 'Ana'] },
+    { raw: { date: '2026-09-30', time: null }, count: 0, voters: [] },
+  ];
+  const ranked = rankTopSlots(rows, 2);
+  assert.deepEqual(ranked.map((slot) => [slot.date, slot.time]), [
+    ['2026-09-28', '18:00'],
+    ['2026-09-28', '19:00'],
+    ['2026-09-29', '18:00'],
+    ['2026-09-30', null],
+  ]);
+  assert.deepEqual(ranked[0].names, ['Ben', 'Ana']);
+  assert.equal(ranked[0].everyone, true);
+  assert.equal(ranked[2].everyone, false);
+  assert.equal(ranked[3].everyone, false);
 });
