@@ -42,7 +42,7 @@ function orderedNamesForSlot(date, time) {
   const names = new Set();
   for (const name of slotOptions.get(date)?.get(timeKey) ?? []) names.add(name);
   for (const name of slotExtras.get(date)?.get(timeKey) ?? []) names.add(name);
-  if (time !== null && time >= '09:00' && time < '17:00') {
+  if (time === null) {
     for (const name of slotOptions.get(date)?.get('') ?? []) names.add(name);
     for (const name of slotExtras.get(date)?.get('') ?? []) names.add(name);
   }

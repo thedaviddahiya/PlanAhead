@@ -188,6 +188,9 @@ export function createCalendar({
     allDayEl.classList.toggle('on', isDayOnly);
     allDayEl.setAttribute('aria-pressed', String(isDayOnly));
     allDayEl.disabled = editorMode === 'offered-only' && !offered.dayOnly;
+    allDayEl.querySelector('.block-dots')?.remove();
+    const allDayDots = dotsFor(selectedDate, null);
+    if (allDayDots) allDayEl.append(allDayDots);
 
     rulerBlocksEl.replaceChildren();
     for (const slot of rulerSlots()) {
