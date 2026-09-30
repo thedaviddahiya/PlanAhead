@@ -227,7 +227,6 @@ legend {
 }
 
 .cal-nav:hover {
-.cal-nav:hover {
   border-color: var(--accent);
   color: var(--accent-deep);
   background: var(--accent-soft);
