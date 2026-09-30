@@ -181,6 +181,49 @@ bestToggle.addEventListener('click', () => {
   bestList.hidden = !bestOpen;
 });
 
+calendar = createCalendar({
+  gridEl: document.querySelector('#cal-grid'),
+  monthEl: document.querySelector('#cal-month'),
+  prevEl: document.querySelector('#cal-prev'),
+  nextEl: document.querySelector('#cal-next'),
+  rulerPanelEl: document.querySelector('#ruler-panel'),
+  rulerTitleEl: document.querySelector('#ruler-title'),
+  allDayEl: document.querySelector('#all-day'),
+  rulerBlocksEl: document.querySelector('#ruler-blocks'),
+  rulerExtrasEl: document.querySelector('#ruler-extras'),
+  clearEl: document.querySelector('#clear-day'),
+  editorMode: 'full',
+  slotsForDate: (date) => ({
+    times: optionsForDay(date)
+      .filter((option) => option.time !== null)
+      .map((option) => option.time),
+    dayOnly: optionsForDay(date).some((option) => option.time === null),
+  }),
+  peopleForSlot,
+});
+
+calendar.renderCalendar();
+
+calendar.onChange(() => {
+  if (currentModel) renderTiles(currentModel);
+});
+
+document.querySelector('#cal-prev').addEventListener('click', () => {
+  if (currentModel) renderTiles(currentModel);
+});
+
+document.querySelector('#cal-next').addEventListener('click', () => {
+  if (currentModel) renderTiles(currentModel);
+});
+
+document.querySelector('#cal-grid').addEventListener('click', (event) => {
+  const cell = event.target.closest('.cal-day:not(.dim)');
+  if (!cell) return;
+  const date = dateFromCalendarCell(cell);
+  if (!date) return;
+  selectedDate = date;
+});
+
 let selectedDate = null;
 
 function setResultsStatus(message) {
