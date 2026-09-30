@@ -447,13 +447,20 @@ legend {
   cursor: default;
 }
 
-.ruler-ticks {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0.3rem;
+.block-label {
+  font-size: 0.58rem;
+  line-height: 1;
   color: var(--muted);
-  font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.ruler-block.on .block-label {
+  color: #fff;
+}
+
+.ruler-block.off .block-label {
+  color: inherit;
 }
 
 .day-readout-people {

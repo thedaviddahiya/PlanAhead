@@ -198,6 +198,10 @@ export function createCalendar({
       block.dataset.time = slot;
       const dots = dotsFor(selectedDate, slot);
       if (dots) block.append(dots);
+      const label = document.createElement('span');
+      label.className = 'block-label';
+      label.textContent = slot;
+      block.append(label);
       rulerBlocksEl.append(block);
     }
 
