@@ -79,6 +79,23 @@ function peopleForSlot(date, time) {
     .filter((color) => Boolean(color));
 }
 
+function overlapNamesForSlot(date, time) {
+  const names = new Set(orderedNamesForSlot(date, time));
+  if (time !== null && time >= '09:00' && time < '17:00') {
+    for (const name of orderedNamesForSlot(date, null)) names.add(name);
+  }
+  if (time === null) return orderedNamesForSlot(date, null);
+  const ordered = [];
+  const seen = new Set();
+  for (const name of [...(currentModel?.names ?? []), ...names]) {
+    if (names.has(name) && !seen.has(name)) {
+      seen.add(name);
+      ordered.push(name);
+    }
+  }
+  return ordered;
+}
+
 function showNotFound(message, canRetry = false) {
   notfoundMessage.textContent = message;
   retryButton.hidden = !canRetry;
@@ -149,7 +166,7 @@ function renderBestPanel() {
   if (!currentModel) return;
   const entries = rankBestSlots(
     buildSlotCandidates(currentModel.rows, slotExtras),
-    (date, time) => orderedNamesForSlot(date, time),
+    (date, time) => overlapNamesForSlot(date, time),
     currentModel.names.length
   ).slice(0, 5);
   const groups = new Map();
