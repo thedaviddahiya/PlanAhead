@@ -496,6 +496,12 @@ legend {
   gap: 0.25rem;
 }
 
+.readout-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .person-dot {
   display: inline-block;
   width: 0.65rem;
@@ -504,7 +510,14 @@ legend {
 }
 
 .best-panel {
+  display: flex;
+  justify-content: center;
   margin: 0.8rem 0 0.3rem;
+}
+
+#best-toggle .caret {
+  font-size: 0.75rem;
+  margin-left: 0.35rem;
 }
 
 #best-toggle {

@@ -200,9 +200,14 @@ function renderDayReadout(date) {
         dot.title = name;
         people.append(dot);
       }
-      const text = document.createElement('span');
-      text.textContent = names.join(', ');
-      people.append(text);
+    }
+    if (currentModel && names.length > 0) {
+      const count = document.createElement('span');
+      count.className = 'readout-count';
+      count.textContent = `${names.length} of ${currentModel.names.length}`;
+      row.append(label, people, count);
+      dayReadout.append(row);
+      continue;
     }
     row.append(label, people);
     dayReadout.append(row);
