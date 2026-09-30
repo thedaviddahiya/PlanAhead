@@ -32,6 +32,9 @@ const tileLegend = document.querySelector('#tile-legend');
 
 let calendar;
 let currentModel;
+let poll;
+let client;
+let realtimeChannel;
 let slotOptions = new Map();
 let slotExtras = new Map();
 let nameColors = new Map();
