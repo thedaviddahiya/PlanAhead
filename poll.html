@@ -30,11 +30,19 @@
       Supabase is not configured yet. Add your project details in <a href="README.md#setup">the setup guide</a>.
     </section>
 
-    <section id="respond-panel" class="card" hidden aria-labelledby="respond-heading">
-      <h2 id="respond-heading">Your availability</h2>
-      <form id="response-form">
-        <label for="name-input">Your name</label>
-        <input id="name-input" name="name" type="text" maxlength="80" autocomplete="name" required>
+    <section id="respond-panel" class="card split-layout" hidden aria-labelledby="respond-heading">
+      <aside class="split-side">
+        <h2 id="respond-heading">Your availability</h2>
+        <form id="response-form">
+          <label for="name-input">Your name</label>
+          <input id="name-input" name="name" type="text" maxlength="80" autocomplete="name" required>
+
+          <div id="respond-error" class="error" role="alert" aria-live="polite"></div>
+          <button id="submit-response" type="submit">Submit availability</button>
+        </form>
+      </aside>
+
+      <div class="split-main">
         <fieldset>
           <legend>Select all times that work</legend>
           <div class="calendar-block">
@@ -62,21 +70,12 @@
             <div id="day-readout" class="day-readout" aria-live="polite"></div>
           </div>
         </fieldset>
-        <div id="respond-error" class="error" role="alert" aria-live="polite"></div>
-        <button id="submit-response" type="submit">Submit availability</button>
-      </form>
+      </div>
     </section>
 
     <section id="thankyou-panel" class="card" hidden aria-live="polite">
       <h2>Thanks for responding</h2>
-      <p>Your availability has been added to the results.</p>
-    </section>
-
-    <section id="results-panel" class="card" hidden aria-labelledby="results-heading">
-      <h2 id="results-heading">Results</h2>
-      <button id="refresh-results" type="button">Refresh results</button>
-      <p id="results-status" role="status" aria-live="polite"></p>
-      <div id="results-grid" class="results-scroll" aria-live="polite"></div>
+      <p>Your availability has been added to the calendar.</p>
     </section>
   </main>
 </body>

@@ -19,24 +19,31 @@
       <p>Find a time that works for everyone.</p>
     </header>
 
-    <section class="card" aria-labelledby="create-heading">
-      <h2 id="create-heading">Create a poll</h2>
-      <div id="setup-notice" class="notice" hidden>
-        Supabase is not configured yet. Add your project details in <a href="README.md#setup">the setup guide</a>.
-      </div>
-      <form id="create-form">
-        <label for="title">Title</label>
-        <input id="title" name="title" type="text" maxlength="200" required>
+    <section class="card split-layout" aria-labelledby="create-heading">
+      <aside class="split-side">
+        <h2 id="create-heading">Create a poll</h2>
+        <div id="setup-notice" class="notice" hidden>
+          Supabase is not configured yet. Add your project details in <a href="README.md#setup">the setup guide</a>.
+        </div>
+        <form id="create-form">
+          <label for="title">Title</label>
+          <input id="title" name="title" type="text" maxlength="200" required>
 
-        <label for="description">Description <span>(optional)</span></label>
-        <textarea id="description" name="description" maxlength="2000" rows="3"></textarea>
+          <label for="description">Description <span>(optional)</span></label>
+          <textarea id="description" name="description" maxlength="2000" rows="3"></textarea>
 
-        <label for="creator-name">Your name <span>(joins the poll with your own availability)</span></label>
-        <input id="creator-name" name="creator-name" type="text" maxlength="80" autocomplete="name">
+          <label for="creator-name">Your name <span>(you join your own poll)</span></label>
+          <input id="creator-name" name="creator-name" type="text" maxlength="80" autocomplete="name">
 
-        <label for="create-password">Creation password</label>
-        <input id="create-password" name="create-password" type="password" autocomplete="off" required>
+          <label for="create-password">Creation password</label>
+          <input id="create-password" name="create-password" type="password" autocomplete="off" required>
 
+          <div id="create-error" class="error" role="alert" aria-live="polite"></div>
+          <button type="submit">Create poll</button>
+        </form>
+      </aside>
+
+      <div class="split-main">
         <fieldset>
           <legend>Pick the days, then add times in each day's popup</legend>
           <div class="calendar-block">
@@ -63,9 +70,11 @@
           </div>
         </fieldset>
 
-        <div id="create-error" class="error" role="alert" aria-live="polite"></div>
-        <button type="submit">Create poll</button>
-      </form>
+        <section id="summary-panel" aria-labelledby="summary-heading">
+          <h3 id="summary-heading">Your availability</h3>
+          <ul id="options-list" aria-live="polite"></ul>
+        </section>
+      </div>
     </section>
 
     <section id="result-panel" class="card" hidden aria-labelledby="result-heading">

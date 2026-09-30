@@ -124,7 +124,28 @@ export function createCalendar({
   }
 
   function selectDay(dateIso) {
+    const wasSameDay = selectedDate === dateIso;
     selectedDate = dateIso;
+    let changed = false;
+    if (editorMode === 'full') {
+      const hadDay = daySlots.has(dateIso);
+      if (wasSameDay) {
+        const isActiveDayOnly = hadDay && slotsFor(dateIso).length === 0;
+        if (isActiveDayOnly) {
+          daySlots.delete(dateIso);
+        } else {
+          setSlots(dateIso, []);
+        }
+        changed = true;
+      } else if (!hadDay) {
+        setSlots(dateIso, []);
+        changed = true;
+      }
+    }
+    if (changed) {
+      renderCalendar();
+      notifyChange();
+    }
     for (const cell of gridEl.querySelectorAll('.cal-day.selected')) {
       cell.classList.remove('selected');
     }
