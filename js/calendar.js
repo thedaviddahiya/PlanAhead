@@ -7,7 +7,6 @@ import {
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
 const DOW_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-const MAX_DOTS = 4;
 
 export function createCalendar({
   gridEl,
@@ -101,16 +100,6 @@ export function createCalendar({
       cell.setAttribute('aria-label',
         `Set times for ${MONTH_NAMES[viewMonth]} ${day}` +
         (slots.length > 0 ? ` (${slots.length} chosen)` : (hasDay ? ' (day only)' : '')));
-      if (hasDay) {
-        const dots = document.createElement('span');
-        dots.className = 'cal-dots';
-        for (let index = 0; index < Math.min(Math.max(slots.length, 1), MAX_DOTS); index += 1) {
-          const dot = document.createElement('span');
-          dot.className = 'cal-dot';
-          dots.append(dot);
-        }
-        cell.append(dots);
-      }
       cell.addEventListener('click', () => selectDay(dateIso));
       gridEl.append(cell);
     }

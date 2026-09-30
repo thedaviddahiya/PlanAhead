@@ -29,7 +29,6 @@ const submitButton = document.querySelector('#submit-response');
 const title = document.querySelector('#poll-title');
 const description = document.querySelector('#poll-description');
 const tileLegend = document.querySelector('#tile-legend');
-const dayReadout = document.querySelector('#day-readout');
 
 let calendar;
 let currentModel;
@@ -137,29 +136,37 @@ function renderBestPanel() {
     (date, time) => orderedNamesForSlot(date, time),
     currentModel.names.length
   ).slice(0, 5);
+  const groups = new Map();
   for (const entry of entries) {
-    const row = document.createElement('div');
-    row.className = 'best-row';
-    if (entry.everyone) row.classList.add('best-everyone');
-    const label = document.createElement('strong');
-    label.textContent = dayAvailabilityLabel(entry.time);
-    const date = document.createElement('span');
-    date.textContent = formatOption({ date: entry.date, time: null });
-    const detail = document.createElement('span');
-    detail.className = 'best-meta';
-    detail.textContent = entry.everyone ? 'Everyone' : `${entry.count} of ${currentModel.names.length}`;
-    const people = document.createElement('span');
-    people.className = 'day-readout-people';
-    for (const name of entry.names) {
-      const dot = document.createElement('span');
-      dot.className = 'person-dot';
-      dot.style.backgroundColor = nameColors.get(name);
-      dot.title = name;
-      people.append(dot);
+    if (!groups.has(entry.date)) groups.set(entry.date, []);
+    groups.get(entry.date).push(entry);
+  }
+  for (const [date, groupEntries] of groups) {
+    const heading = document.createElement('div');
+    heading.className = 'best-date';
+    heading.textContent = formatOption({ date, time: null });
+    bestList.append(heading);
+    for (const entry of groupEntries) {
+      const row = document.createElement('div');
+      row.className = 'best-row';
+      const label = document.createElement('strong');
+      label.textContent = dayAvailabilityLabel(entry.time);
+      const people = document.createElement('span');
+      people.className = 'best-people';
+      for (const name of entry.names) {
+        const dot = document.createElement('span');
+        dot.className = 'person-dot';
+        dot.style.backgroundColor = nameColors.get(name);
+        dot.title = name;
+        people.append(dot);
+      }
+      const detail = document.createElement('span');
+      detail.className = 'best-meta';
+      detail.textContent = entry.everyone ? 'Everyone' : `${entry.count} of ${currentModel.names.length}`;
+      people.append(detail);
+      row.append(label, people);
+      bestList.append(row);
     }
-    people.append(detail);
-    row.append(label, date, people);
-    bestList.append(row);
   }
 }
 
@@ -172,98 +179,6 @@ bestToggle.addEventListener('click', () => {
 });
 
 let selectedDate = null;
-
-function renderDayReadout(date) {
-  if (!date) {
-    dayReadout.replaceChildren();
-    return;
-  }
-  dayReadout.replaceChildren();
-  const options = optionsForDay(date);
-  if (options.length === 0) return;
-  const seen = new Set();
-  for (const option of options) {
-    const time = option.time ?? null;
-    const key = String(time);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const row = document.createElement('div');
-    row.className = 'day-readout-row';
-    const label = document.createElement('strong');
-    label.textContent = dayAvailabilityLabel(time);
-    const names = orderedNamesForSlot(date, time);
-    const people = document.createElement('span');
-    people.className = 'day-readout-people';
-    if (names.length === 0) {
-      people.textContent = 'No responses yet';
-    } else {
-      for (const name of names) {
-        const dot = document.createElement('span');
-        dot.className = 'person-dot';
-        dot.style.backgroundColor = nameColors.get(name);
-        dot.title = name;
-        people.append(dot);
-      }
-    }
-    if (currentModel && names.length > 0) {
-      const count = document.createElement('span');
-      count.className = 'readout-count';
-      count.textContent = `${names.length} of ${currentModel.names.length}`;
-      row.append(label, people, count);
-      dayReadout.append(row);
-      continue;
-    }
-    row.append(label, people);
-    dayReadout.append(row);
-  }
-}
-
-calendar = createCalendar({
-  gridEl: document.querySelector('#cal-grid'),
-  monthEl: document.querySelector('#cal-month'),
-  prevEl: document.querySelector('#cal-prev'),
-  nextEl: document.querySelector('#cal-next'),
-  rulerPanelEl: document.querySelector('#ruler-panel'),
-  rulerTitleEl: document.querySelector('#ruler-title'),
-  allDayEl: document.querySelector('#all-day'),
-  rulerBlocksEl: document.querySelector('#ruler-blocks'),
-  rulerExtrasEl: document.querySelector('#ruler-extras'),
-  clearEl: document.querySelector('#clear-day'),
-  editorMode: 'full',
-  slotsForDate: (date) => ({
-    times: optionsForDay(date)
-      .filter((option) => option.time !== null)
-      .map((option) => option.time),
-    dayOnly: optionsForDay(date).some((option) => option.time === null),
-  }),
-  peopleForSlot,
-});
-
-calendar.onChange(() => {
-  if (currentModel) renderTiles(currentModel);
-  renderDayReadout(selectedDate);
-});
-
-document.querySelector('#cal-prev').addEventListener('click', () => {
-  if (currentModel) renderTiles(currentModel);
-});
-
-document.querySelector('#cal-next').addEventListener('click', () => {
-  if (currentModel) renderTiles(currentModel);
-});
-
-document.querySelector('#cal-grid').addEventListener('click', (event) => {
-  const cell = event.target.closest('.cal-day:not(.dim)');
-  if (!cell) return;
-  const date = dateFromCalendarCell(cell);
-  if (!date) return;
-  selectedDate = date;
-  renderDayReadout(date);
-});
-
-let client;
-let poll;
-let realtimeChannel;
 
 function setResultsStatus(message) {
   if (message) respondError.textContent = message;
