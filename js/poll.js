@@ -132,7 +132,8 @@ function renderBestPanel() {
   bestList.replaceChildren();
   if (!currentModel) return;
   const entries = rankTopSlots(currentModel.rows, currentModel.names.length)
-    .filter((entry) => entry.count > 0);
+    .filter((entry) => entry.count > 0)
+    .slice(0, 5);
   for (const entry of entries) {
     const row = document.createElement('div');
     row.className = 'best-row';
