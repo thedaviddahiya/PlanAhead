@@ -32,7 +32,7 @@ end $$;
 
 alter table public.responses
   add constraint responses_selection_check
-  check (cardinality(selected) >= 1 or cardinality(extra) >= 1)
+  check (cardinality(selected) >= 1 or jsonb_array_length(extra) >= 1)
   not valid;
 
 alter table public.responses validate constraint responses_selection_check;

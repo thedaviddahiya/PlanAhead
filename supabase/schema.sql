@@ -24,7 +24,7 @@ create table public.responses (
   selected int[] not null default '{}',
   extra jsonb not null default '[]' check (jsonb_typeof(extra) = 'array'),
   created_at timestamptz default now(),
-  check (cardinality(selected) >= 1 or cardinality(extra) >= 1)
+  check (cardinality(selected) >= 1 or jsonb_array_length(extra) >= 1)
 );
 
 create index responses_poll_id_idx on public.responses(poll_id);
