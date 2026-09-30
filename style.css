@@ -389,6 +389,8 @@ legend {
 .ruler-blocks {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(2, auto);
+  grid-auto-flow: column;
   gap: 0.25rem;
 }
 
