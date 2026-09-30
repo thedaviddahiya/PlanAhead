@@ -319,6 +319,7 @@ function revealResponseForm() {
   nameLabelElement().hidden = false;
   nameInput.hidden = false;
   submitButton.hidden = false;
+  submitButton.disabled = false;
   modifyEntryButton.hidden = true;
   const own = findOwnResponse(latestResponses, nameInput.value);
   if (own) {
