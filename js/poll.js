@@ -309,6 +309,12 @@ async function loadPoll() {
       return;
     }
     poll = { ...data, options: Array.isArray(data.options) ? data.options : [] };
+    calendar.setStep(Number(poll.step_minutes) === 60 ? 60 : 30);
+    for (const hint of document.querySelectorAll('.ruler-hint')) {
+      hint.textContent = Number(poll.step_minutes) === 60
+        ? 'Each block is one hour · marks run 09:00–21:00'
+        : 'Each block is 30 minutes · marks run 09:00–21:00';
+    }
     title.textContent = data.title;
     description.textContent = data.description ?? '';
     respondPanel.hidden = false;

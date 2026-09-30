@@ -510,3 +510,23 @@ test('restoreDaySlots rebuilds calendar selections from a response', () => {
   assert.deepEqual([...restoreDaySlots(options, { name: 'Ana', selected: [99, -1], extra: 'junk' })], []);
   assert.deepEqual(restoreDaySlots('', null), null);
 });
+
+test('rulerSlots supports 60-minute step from 09:00 to 20:00', () => {
+  const slots = rulerSlots(60);
+  assert.deepEqual(slots.length, 12);
+  assert.equal(slots[0], '09:00');
+  assert.equal(slots.at(-1), '20:00');
+  assert.deepEqual(slots.filter((slot) => slot.endsWith(':30')), []);
+});
+
+test('rulerSlots rejects unsupported steps and falls back to 30', () => {
+  assert.deepEqual(rulerSlots(45).length, 24);
+  assert.deepEqual(rulerSlots('x').length, 24);
+});
+
+test('isRulerSlot honors the step parameter', () => {
+  assert.equal(isRulerSlot('10:30', 60), false);
+  assert.equal(isRulerSlot('10:00', 60), true);
+  assert.equal(isRulerSlot('10:30', 30), true);
+  assert.equal(isRulerSlot('10:00', 45), true); // falls back to 30
+});

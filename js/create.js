@@ -32,6 +32,15 @@ const openPollLink = document.querySelector('#open-poll');
 const submitButton = form.querySelector('button[type="submit"]');
 
 const client = getClient();
+const stepSelect = document.querySelector('#create-step');
+const rulerHints = document.querySelectorAll('.ruler-hint');
+
+function updateRulerHint() {
+  const text = Number(stepSelect.value) === 60
+    ? 'Each block is one hour · marks run 09:00–21:00'
+    : 'Each block is 30 minutes · marks run 09:00–21:00';
+  for (const hint of rulerHints) hint.textContent = text;
+}
 
 function showError(messages) {
   errorBox.textContent = Array.isArray(messages) ? messages.join('\n') : messages;
@@ -49,6 +58,12 @@ const calendar = createCalendar({
   rulerExtrasEl: document.querySelector('#ruler-extras'),
   clearEl: document.querySelector('#clear-day'),
   editorMode: 'full',
+});
+
+updateRulerHint();
+stepSelect.addEventListener('change', () => {
+  calendar.setStep(Number(stepSelect.value));
+  updateRulerHint();
 });
 
 function copyShareLink() {
@@ -105,6 +120,7 @@ form.addEventListener('submit', async (event) => {
         title: titleInput.value.trim(),
         description: descriptionInput.value.trim() || null,
         options,
+        step_minutes: Number(stepSelect.value) === 60 ? 60 : 30,
       });
       if (!error) {
         localStorage.setItem('planahead-creation-password', creationPasswordInput.value);

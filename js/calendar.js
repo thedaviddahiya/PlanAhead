@@ -2,6 +2,7 @@ import {
   formatOption,
   isRulerSlot,
   rulerSlots,
+  normalizeStep,
 } from './app.js';
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -22,6 +23,7 @@ export function createCalendar({
   editorMode = 'full',
   slotsForDate,
   peopleForSlot,
+  stepMinutes = 30,
 }) {
   const daySlots = new Map();
   let viewYear;
@@ -56,8 +58,8 @@ export function createCalendar({
       ? slotsForDate(dateIso)
       : { times: [], dayOnly: false };
     return {
-      times: (offered?.times ?? []).filter((time) => isRulerSlot(time)),
-      extras: (offered?.times ?? []).filter((time) => !isRulerSlot(time)).sort(),
+      times: (offered?.times ?? []).filter((time) => isRulerSlot(time, stepMinutes)),
+      extras: (offered?.times ?? []).filter((time) => !isRulerSlot(time, stepMinutes)).sort(),
       dayOnly: Boolean(offered?.dayOnly),
     };
   }
@@ -182,7 +184,7 @@ export function createCalendar({
     if (allDayDots) allDayEl.append(allDayDots);
 
     rulerBlocksEl.replaceChildren();
-    for (const slot of rulerSlots()) {
+    for (const slot of rulerSlots(stepMinutes)) {
       const block = document.createElement('button');
       block.type = 'button';
       block.className = 'ruler-block';
@@ -357,6 +359,11 @@ export function createCalendar({
     renderCalendar,
     renderRuler,
     selectDay,
+    setStep(nextStep) {
+      stepMinutes = normalizeStep(nextStep);
+      renderCalendar();
+      renderRuler();
+    },
     onChange(callback) {
       changeListeners.push(callback);
     },

@@ -154,20 +154,26 @@ export function buildShareLink(pollId) {
 const RULER_START = 9 * 60;
 const RULER_END = 21 * 60;
 
-export function rulerSlots() {
+export function normalizeStep(stepMinutes) {
+  return [30, 60].includes(stepMinutes) ? stepMinutes : 30;
+}
+
+export function rulerSlots(stepMinutes) {
+  const step = normalizeStep(stepMinutes);
   const slots = [];
-  for (let minutes = RULER_START; minutes < RULER_END; minutes += 30) {
+  for (let minutes = RULER_START; minutes < RULER_END; minutes += step) {
     const hours = Math.floor(minutes / 60);
     slots.push(`${String(hours).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`);
   }
   return slots;
 }
 
-export function isRulerSlot(value) {
+export function isRulerSlot(value, stepMinutes) {
   if (!isValidTimeFormat(value)) return false;
   const [hours, minutes] = value.split(':').map(Number);
   const total = hours * 60 + minutes;
-  return total >= RULER_START && total < RULER_END && minutes % 30 === 0;
+  const step = normalizeStep(stepMinutes);
+  return total >= RULER_START && total < RULER_END && minutes % step === 0;
 }
 
 export function legacyExtraTimes(options) {

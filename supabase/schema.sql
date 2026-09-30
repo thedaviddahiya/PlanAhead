@@ -14,7 +14,8 @@ create table public.polls (
       '$[*] ? (@.type() != "object" || !exists(@.date) || @.date.type() != "string" || !(@.date like_regex "^[0-9]{4}-[0-9]{2}-[0-9]{2}$") || (exists(@.time) && @.time.type() != "null" && (@.time.type() != "string" || !(@.time like_regex "^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"))))'
     )
   ),
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  step_minutes int not null default 30 check (step_minutes in (30, 60))
 );
 
 create table public.responses (
