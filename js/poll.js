@@ -9,6 +9,8 @@ import {
   buildSlotCandidates,
   rankBestSlots,
   getClient,
+  findOwnResponse,
+  restoreDaySlots,
   splitSelectionsFromDays,
   validateResponseInput,
 } from './app.js';
@@ -26,6 +28,7 @@ const responseForm = document.querySelector('#response-form');
 const nameInput = document.querySelector('#name-input');
 const respondError = document.querySelector('#respond-error');
 const submitButton = document.querySelector('#submit-response');
+const modifyEntryButton = document.querySelector('#modify-entry');
 const title = document.querySelector('#poll-title');
 const description = document.querySelector('#poll-description');
 const tileLegend = document.querySelector('#tile-legend');
@@ -39,6 +42,16 @@ let slotOptions = new Map();
 let slotExtras = new Map();
 let nameColors = new Map();
 let bestOpen = false;
+const myNameKey = `planahead-my-name:${pollId}`;
+
+function nameLabelElement() {
+  return responseForm.querySelector('label[for="name-input"]');
+}
+
+function updateSubmitLabel() {
+  const own = findOwnResponse(latestResponses, nameInput.value);
+  submitButton.textContent = own ? 'Modify entry' : 'Submit availability';
+}
 
 function orderedNamesForSlot(date, time) {
   const timeKey = time ?? '';
@@ -248,6 +261,7 @@ async function loadResults() {
   if (error) throw error;
   const model = buildViewModel(poll.options, data);
   renderTiles(model, data);
+  updateSubmitLabel();
   setResultsStatus('');
 }
 
@@ -263,7 +277,7 @@ function subscribeToResults() {
   cleanupRealtime();
   realtimeChannel = client.channel(`planahead-${pollId}`)
     .on('postgres_changes', {
-      event: 'INSERT', schema: 'public', table: 'responses', filter: `poll_id=eq.${pollId}`,
+      event: '*', schema: 'public', table: 'responses', filter: `poll_id=eq.${pollId}`,
     }, () => refreshResults())
     .subscribe();
 }
@@ -281,15 +295,49 @@ async function loadPoll() {
     title.textContent = data.title;
     description.textContent = data.description ?? '';
     respondPanel.hidden = false;
+    const savedName = localStorage.getItem(myNameKey);
+    if (savedName && !nameInput.value) nameInput.value = savedName;
     await loadResults();
+    restoreOwnSelectionIfAny();
     subscribeToResults();
   } catch (error) {
     showNotFound('Could not reach the database.', true);
   }
 }
 
+function restoreOwnSelectionIfAny() {
+  if (calendar.daySlots.size !== 0) return;
+  const own = findOwnResponse(latestResponses, nameInput.value || localStorage.getItem(myNameKey));
+  if (!own) return;
+  const restored = restoreDaySlots(poll.options, own);
+  if (!restored || restored.size === 0) return;
+  for (const [date, times] of restored) calendar.daySlots.set(date, [...times]);
+  calendar.renderCalendar();
+}
+
+function revealResponseForm() {
+  nameLabelElement().hidden = false;
+  nameInput.hidden = false;
+  submitButton.hidden = false;
+  modifyEntryButton.hidden = true;
+  const own = findOwnResponse(latestResponses, nameInput.value);
+  if (own) {
+    nameInput.value = own.name;
+    const restored = restoreDaySlots(poll.options, own);
+    for (const [date, times] of restored ?? []) calendar.daySlots.set(date, [...times]);
+    calendar.renderCalendar();
+  }
+  respondError.textContent = '';
+}
+
+modifyEntryButton.addEventListener('click', revealResponseForm);
+
+nameInput.addEventListener('input', updateSubmitLabel);
+
 responseForm.addEventListener('submit', async (event) => {
   event.preventDefault();
+  const own = findOwnResponse(latestResponses, nameInput.value);
+  const storedName = own ? own.name : nameInput.value.trim();
   const { indexes, extras } = splitSelectionsFromDays(poll.options, calendar.daySlots);
   const errors = validateResponseInput(
     nameInput.value,
@@ -303,17 +351,23 @@ responseForm.addEventListener('submit', async (event) => {
   submitButton.disabled = true;
   showError('');
   try {
-    const { error } = await client.from('responses').insert({
+    const { error } = await client.from('responses').upsert({
       poll_id: pollId,
-      name: nameInput.value.trim(),
+      name: storedName,
       selected: indexes,
       extra: extras,
-    });
+    }, { onConflict: 'poll_id,name' });
     if (error) throw error;
+    try {
+      localStorage.setItem(myNameKey, storedName);
+    } catch {
+      /* storage unavailable */
+    }
     nameInput.hidden = true;
-    responseForm.querySelector('label[for="name-input"]').hidden = true;
+    nameLabelElement().hidden = true;
     submitButton.hidden = true;
     thankyouPanel.hidden = false;
+    modifyEntryButton.hidden = false;
     await refreshResults();
   } catch (error) {
     showError(error?.message || 'Could not submit your response.');

@@ -227,6 +227,7 @@ legend {
 }
 
 .cal-nav:hover {
+.cal-nav:hover {
   border-color: var(--accent);
   color: var(--accent-deep);
   background: var(--accent-soft);
@@ -760,4 +761,18 @@ legend {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+#modify-entry {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  background: var(--surface);
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+
+#modify-entry:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--surface);
 }

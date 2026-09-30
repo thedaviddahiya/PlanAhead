@@ -89,4 +89,22 @@ create policy responses_insert_authenticated on public.responses
     exists (select 1 from public.polls p where p.id = poll_id)
   );
 
+create policy responses_update_anon on public.responses
+  for update to anon
+  using (true)
+  with check (
+    exists (select 1 from public.polls p where p.id = poll_id)
+  );
+
+create policy responses_update_authenticated on public.responses
+  for update to authenticated
+  using (true)
+  with check (
+    exists (select 1 from public.polls p where p.id = poll_id)
+  );
+
+-- One entry per name per poll; the app upserts against (poll_id, name)
+create unique index responses_poll_name_key
+  on public.responses (poll_id, name);
+
 alter publication supabase_realtime add table public.responses;

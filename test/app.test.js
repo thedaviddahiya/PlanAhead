@@ -23,6 +23,9 @@ import {
   buildOptionNamesBySlot,
   buildSlotCandidates,
   rankBestSlots,
+  findOwnResponse,
+  restoreDaySlots,
+  normalizeName,
   offeredTimes,
   PERSON_COLORS,
   rulerSlots,
@@ -460,4 +463,50 @@ test('rankBestSlots ranks candidate slots by availability, everyone flag, filter
   assert.equal(ranked[0].everyone, true);
   assert.equal(ranked[1].everyone, false);
   assert.deepEqual(rankBestSlots(candidates, () => [], 2), []);
+});
+
+test('findOwnResponse matches names case-insensitively and returns latest match', () => {
+  const responses = [
+    { name: 'Dan', selected: [0], extra: [] },
+    { name: '  ana  ', selected: [1], extra: [] },
+    { name: 'Ana', selected: [2], extra: [] },
+  ];
+  assert.deepEqual(findOwnResponse(responses, 'DAN'), responses[0]);
+  assert.deepEqual(findOwnResponse(responses, 'ana'), responses[2]);
+  assert.equal(findOwnResponse(responses, 'Ben'), null);
+  assert.equal(findOwnResponse(responses, ''), null);
+  assert.equal(findOwnResponse([{ name: null }, {}, { name: '   ' }], null), null);
+});
+
+test('restoreDaySlots rebuilds calendar selections from a response', () => {
+  const options = [
+    { date: '2026-09-28', time: '18:00', label: null },
+    { date: '2026-09-28', time: '19:00', label: null },
+    { date: '2026-09-29', time: '18:00', label: null },
+    { date: '2026-09-28', time: null, label: null },
+  ];
+  assert.deepEqual(restoreDaySlots(options, { name: 'Dan', selected: [0, 1], extra: [] }), new Map([
+    ['2026-09-28', ['18:00', '19:00']],
+  ]));
+  assert.deepEqual(restoreDaySlots(options, { name: 'Eve', selected: [3], extra: [] }), new Map([
+    ['2026-09-28', []],
+  ]));
+  assert.deepEqual(restoreDaySlots(options, {
+    name: 'Eve',
+    selected: [],
+    extra: [
+      { date: '2026-09-30', times: [] },
+      { date: '2026-10-01', times: ['08:00'] },
+      { date: '2026-10-01', times: ['07:00', '08:30'] },
+    ],
+  }), new Map([
+    ['2026-09-30', []],
+    ['2026-10-01', ['07:00', '08:00', '08:30']],
+  ]));
+  assert.deepEqual(restoreDaySlots(options, { name: 'Ana', selected: [3, 0], extra: [{ date: '2026-09-28', times: ['20:15'] }] }), new Map([
+    ['2026-09-28', ['18:00', '20:15']],
+  ]));
+  assert.equal(restoreDaySlots(options, null), null);
+  assert.deepEqual([...restoreDaySlots(options, { name: 'Ana', selected: [99, -1], extra: 'junk' })], []);
+  assert.deepEqual(restoreDaySlots('', null), null);
 });

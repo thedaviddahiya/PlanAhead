@@ -440,3 +440,50 @@ export function rankBestSlots(candidates, namesForSlot, respondentCount) {
     everyone: respondentCount > 0 && slot.count === respondentCount,
   }));
 }
+
+export function normalizeName(value) {
+  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+}
+
+export function findOwnResponse(responses, name) {
+  const query = normalizeName(name).toLowerCase();
+  if (query.length === 0 || !Array.isArray(responses)) return null;
+  let match = null;
+  for (const row of responses) {
+    if (typeof row?.name !== 'string') continue;
+    if (normalizeName(row.name).toLowerCase() === query) match = row;
+  }
+  return match;
+}
+
+export function restoreDaySlots(options, response) {
+  if (!response || typeof response !== 'object' || !Array.isArray(options)) return null;
+  const daySlots = new Map();
+  const addTime = (date, time) => {
+    const slot = typeof date === 'string' && date.length > 0 ? date : null;
+    if (!slot) return;
+    if (!daySlots.has(slot)) daySlots.set(slot, []);
+    if (typeof time === 'string' && time.length > 0 && !daySlots.get(slot).includes(time)) {
+      daySlots.get(slot).push(time);
+    }
+  };
+  for (const index of Array.isArray(response.selected) ? response.selected : []) {
+    const option = options[index];
+    if (option && typeof option.date === 'string' && isValidDateFormat(option.date)) {
+      addTime(option.date, option.time);
+    }
+  }
+  for (const extra of Array.isArray(response.extra) ? response.extra : []) {
+    if (!extra || typeof extra.date !== 'string' || !isValidDateFormat(extra.date)) continue;
+    if (!Array.isArray(extra.times)) continue;
+    const slot = extra.date;
+    if (!daySlots.has(slot)) daySlots.set(slot, []);
+    for (const time of extra.times) {
+      if (typeof time === 'string' && time.length > 0 && !daySlots.get(slot).includes(time)) {
+        daySlots.get(slot).push(time);
+      }
+    }
+  }
+  for (const times of daySlots.values()) times.sort();
+  return daySlots;
+}
