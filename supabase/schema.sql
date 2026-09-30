@@ -24,7 +24,10 @@ create table public.responses (
   selected int[] not null default '{}',
   extra jsonb not null default '[]' check (jsonb_typeof(extra) = 'array'),
   created_at timestamptz default now(),
-  check (cardinality(selected) >= 1 or jsonb_array_length(extra) >= 1)
+  check (
+    cardinality(selected) >= 1
+    or (jsonb_array_length(extra) >= 1 and jsonb_array_length(extra) <= 50)
+  )
 );
 
 create index responses_poll_id_idx on public.responses(poll_id);
@@ -43,9 +46,6 @@ create policy polls_select_anon on public.polls
 
 create policy polls_select_authenticated on public.polls
   for select to authenticated using (true);
-
-create policy app_config_select_anon on public.app_config
-  for select to anon using (true);
 
 create or replace function public.creation_password_matches(candidate text)
 returns boolean
