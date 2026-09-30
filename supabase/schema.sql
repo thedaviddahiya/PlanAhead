@@ -22,8 +22,9 @@ create table public.responses (
   poll_id text not null references public.polls(id) on delete cascade,
   name text not null check (char_length(name) between 1 and 80),
   selected int[] not null default '{}',
+  extra jsonb not null default '[]' check (jsonb_typeof(extra) = 'array'),
   created_at timestamptz default now(),
-  check (cardinality(selected) >= 1)
+  check (cardinality(selected) >= 1 or cardinality(extra) >= 1)
 );
 
 create index responses_poll_id_idx on public.responses(poll_id);

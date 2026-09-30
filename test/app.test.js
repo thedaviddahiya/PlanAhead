@@ -22,7 +22,7 @@ import {
   offeredTimes,
   PERSON_COLORS,
   rulerSlots,
-  selectedIndexesFromDays,
+  splitSelectionsFromDays,
   validatePollInput,
   validateResponseInput,
 } from '../js/app.js';
@@ -347,7 +347,7 @@ test('offeredTimes returns unique on-grid offered times in ruler order', () => {
   assert.deepEqual(offeredTimes(options), ['18:00', '19:00']);
 });
 
-test('selectedIndexesFromDays maps daySlots to option indexes; empty array is day-only', () => {
+test('splitSelectionsFromDays maps offered matches and aggregates unmatched picks as extras', () => {
   const options = [
     { date: '2026-09-28', time: '18:00', label: null },
     { date: '2026-09-28', time: '19:00', label: null },
@@ -355,12 +355,35 @@ test('selectedIndexesFromDays maps daySlots to option indexes; empty array is da
     { date: '2026-09-30', time: '18:00', label: null },
   ];
   const daySlots = new Map([
-    ['2026-09-28', ['19:00', '18:00']],
+    ['2026-09-28', ['19:00', '18:00', '20:15']],
     ['2026-09-29', []],
     ['2026-09-30', []],
+    ['2026-10-01', ['08:30']],
   ]);
-  assert.deepEqual(selectedIndexesFromDays(options, daySlots), [0, 1, 2]);
-  assert.deepEqual(selectedIndexesFromDays(options, new Map()), []);
+  const result = splitSelectionsFromDays(options, daySlots);
+  assert.deepEqual(result.indexes, [0, 1, 2]);
+  assert.deepEqual(result.extras, [
+    { date: '2026-09-28', times: ['20:15'] },
+    { date: '2026-09-30', times: [] },
+    { date: '2026-10-01', times: ['08:30'] },
+  ]);
+  const empty = splitSelectionsFromDays(options, new Map());
+  assert.deepEqual(empty, { indexes: [], extras: [] });
+});
+
+test('buildAvailabilityByDay merges option voters with extra-day respondents', () => {
+  const model = buildViewModel(
+    [{ date: '2026-09-28', time: '18:00', label: null }],
+    [
+      { name: 'Ana', selected: [0], extra: [], created_at: 'a' },
+      { name: 'Ben', selected: [], extra: [{ date: '2026-09-30', times: [] }], created_at: 'b' },
+      { name: 'Chloe', selected: [], extra: [{ date: '2026-09-30', times: ['08:00'] }], created_at: 'c' },
+      { name: 'Dan', selected: [0], extra: [{ date: '2026-09-28', times: ['20:00'] }], created_at: 'd' },
+    ]
+  );
+  const byDay = buildAvailabilityByDay(model.rows, model.extraByDay);
+  assert.deepEqual(byDay.get('2026-09-28').names, ['Ana', 'Dan']);
+  assert.deepEqual(byDay.get('2026-09-30').names, ['Ben', 'Chloe']);
 });
 
 test('dayAvailabilityLabel matches the day-only pseudo-slot label', () => {

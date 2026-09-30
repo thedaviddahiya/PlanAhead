@@ -6,6 +6,8 @@ PlanAhead is a small, Doodle-style availability poll. Create a poll with a title
 
 1. Create a project at [Supabase](https://supabase.com/).
 2. In the Supabase dashboard, open **SQL Editor**, create a new query, paste in [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates the `polls`, `responses`, and `app_config` tables, their indexes, and the required anonymous RLS policies.
+
+   **Existing deployments:** if your project already has the tables, run [`supabase/migration-extra-days.sql`](supabase/migration-extra-days.sql) instead — it adds the `extra` column (respondents can mark any day, even days outside the offered options) and relaxes the response check. Run [`supabase/migration-creation-password.sql`](supabase/migration-creation-password.sql) if you have not yet applied the creation-password migration.
 3. Set the creation password the first time by running:
 
    ```sql
@@ -33,7 +35,7 @@ PlanAhead is a small, Doodle-style availability poll. Create a poll with a title
 6. Push the repository to GitHub, then open **Settings → Pages**. Deploy from branch `main` and folder `/ (root)`.
 7. Share links point at the respond page: with a repository named `availability-poll`, a share link looks like `https://username.github.io/availability-poll/poll.html?poll=abc12345`, where the poll ID is exactly 8 characters. Home-page links of the form `https://username.github.io/availability-poll/?poll=abc12345` redirect to the respond page automatically. If the repository is named differently, use that name in the path.
 
-The schema intentionally permits anonymous clients to select polls and responses, create polls only with the configured creation password, and insert responses for an existing poll. It does not permit anonymous updates or deletes. Responses must contain at least one selected option, and the database validates poll ID, title, description, option shape, and response name lengths.
+The schema intentionally permits anonymous clients to select polls and responses, create polls only with the configured creation password, and insert responses for an existing poll. It does not permit anonymous updates or deletes. Every response records at least one offered option (`selected`) or at least one day outside the options (`extra`), and the database validates poll ID, title, description, option shape, and response name lengths.
 
 ## Local testing
 

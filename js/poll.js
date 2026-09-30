@@ -4,7 +4,7 @@ import {
   buildViewModel,
   dayAvailabilityLabel,
   getClient,
-  selectedIndexesFromDays,
+  splitSelectionsFromDays,
   validateResponseInput,
 } from './app.js';
 import { createCalendar } from './calendar.js';
@@ -63,7 +63,7 @@ function renderLegend(names) {  tileLegend.replaceChildren();
 
 function renderTiles(model) {
   currentModel = model;
-  const availability = buildAvailabilityByDay(model.rows);
+  const availability = buildAvailabilityByDay(model.rows, model.extraByDay);
   const colors = assignTileColors(model.names);
   for (const cell of document.querySelectorAll('#cal-grid .cal-day:not(.dim)')) {
     const date = dateFromCalendarCell(cell);
@@ -126,7 +126,7 @@ calendar = createCalendar({
   rulerBlocksEl: document.querySelector('#ruler-blocks'),
   rulerExtrasEl: document.querySelector('#ruler-extras'),
   clearEl: document.querySelector('#clear-day'),
-  editorMode: 'offered-only',
+  editorMode: 'full',
   slotsForDate: (date) => ({
     times: optionsForDay(date)
       .filter((option) => option.time !== null)
@@ -177,7 +177,7 @@ function cleanupRealtime() {
 
 async function loadResults() {
   const { data, error } = await client.from('responses')
-    .select('name, selected, created_at')
+    .select('name, selected, extra, created_at')
     .eq('poll_id', pollId)
     .order('created_at');
   if (error) throw error;
@@ -225,8 +225,11 @@ async function loadPoll() {
 
 responseForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const selected = selectedIndexesFromDays(poll.options, calendar.daySlots);
-  const errors = validateResponseInput(nameInput.value, selected.length);
+  const { indexes, extras } = splitSelectionsFromDays(poll.options, calendar.daySlots);
+  const errors = validateResponseInput(
+    nameInput.value,
+    indexes.length + extras.length
+  );
   if (errors.length > 0) {
     showError(errors);
     return;
@@ -238,7 +241,8 @@ responseForm.addEventListener('submit', async (event) => {
     const { error } = await client.from('responses').insert({
       poll_id: pollId,
       name: nameInput.value.trim(),
-      selected,
+      selected: indexes,
+      extra: extras,
     });
     if (error) throw error;
     nameInput.hidden = true;

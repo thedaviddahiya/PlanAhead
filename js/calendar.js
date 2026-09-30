@@ -52,7 +52,6 @@ export function createCalendar({
   }
 
   function offeredFor(dateIso) {
-    if (editorMode !== 'offered-only') return null;
     const offered = typeof slotsForDate === 'function'
       ? slotsForDate(dateIso)
       : { times: [], dayOnly: false };
@@ -192,7 +191,7 @@ export function createCalendar({
       rulerBlocksEl.append(block);
     }
 
-    rulerExtrasEl.hidden = editorMode !== 'offered-only' || offered.extras.length === 0;
+    rulerExtrasEl.hidden = offered.extras.length === 0;
     if (!rulerExtrasEl.hidden) {
       rulerExtrasEl.replaceChildren();
       for (const slot of offered.extras) {

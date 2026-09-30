@@ -5,7 +5,7 @@ import {
   getClient,
   getClientWithPassword,
   normalizeOptions,
-  selectedIndexesFromDays,
+  splitSelectionsFromDays,
   validatePollInput,
   validateResponseInput,
 } from './app.js';
@@ -79,7 +79,7 @@ form.addEventListener('submit', async (event) => {
   );
   const normalization = normalizeOptions(entries);
   const options = normalization.options;
-  const selected = selectedIndexesFromDays(options, calendar.daySlots);
+  const { indexes, extras } = splitSelectionsFromDays(options, calendar.daySlots);
   const errors = [
     ...normalization.errors,
     ...validatePollInput({
@@ -87,7 +87,7 @@ form.addEventListener('submit', async (event) => {
       description: descriptionInput.value,
       options,
     }),
-    ...validateResponseInput(creatorNameInput.value, selected.length),
+    ...validateResponseInput(creatorNameInput.value, indexes.length + extras.length),
   ];
   if (errors.length > 0) {
     showError(errors);
@@ -112,7 +112,8 @@ form.addEventListener('submit', async (event) => {
         const { error: responseError } = await client.from('responses').insert({
           poll_id: id,
           name: creatorNameInput.value.trim(),
-          selected,
+          selected: indexes,
+          extra: extras,
         });
         const link = buildShareLink(id);
         shareLink.textContent = link;

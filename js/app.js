@@ -132,7 +132,19 @@ export function buildViewModel(options, responses) {
     }
   }
 
-  return { rows, names, maxCount: rows.reduce((max, row) => Math.max(max, row.count), 0) };
+  const extraByDay = new Map();
+  for (const response of orderedResponses) {
+    const name = String(response?.name ?? '');
+    for (const extraDay of Array.isArray(response?.extra) ? response.extra : []) {
+      const date = extraDay?.date;
+      if (typeof date !== 'string') continue;
+      if (!extraByDay.has(date)) extraByDay.set(date, { names: [] });
+      const day = extraByDay.get(date);
+      if (!day.names.includes(name)) day.names.push(name);
+    }
+  }
+
+  return { rows, names, extraByDay, maxCount: rows.reduce((max, row) => Math.max(max, row.count), 0) };
 }
 
 export function buildShareLink(pollId) {
@@ -177,9 +189,10 @@ export function offeredTimes(options) {
 
 export const DAY_ONLY_SLOT = '09:00–17:00';
 
-export function selectedIndexesFromDays(options, daySlots) {
+export function splitSelectionsFromDays(options, daySlots) {
   const optionList = Array.isArray(options) ? options : [];
   const indexes = [];
+  const extras = new Map();
   const slots = daySlots instanceof Map ? daySlots : new Map();
   for (const [date, times] of slots) {
     const isDayOnly = Array.isArray(times) && times.length === 0;
@@ -188,10 +201,19 @@ export function selectedIndexesFromDays(options, daySlots) {
         && (option.time === null || option.time === undefined
           ? isDayOnly
           : !isDayOnly && option.time === slot));
-      if (index >= 0 && !indexes.includes(index)) indexes.push(index);
+      if (index >= 0) {
+        if (!indexes.includes(index)) indexes.push(index);
+      } else if (!extras.has(date)) {
+        extras.set(date, isDayOnly ? [] : [slot]);
+      } else if (!isDayOnly && !extras.get(date).includes(slot)) {
+        extras.get(date).push(slot);
+      }
     }
   }
-  return indexes.sort((a, b) => a - b);
+  return {
+    indexes: indexes.sort((a, b) => a - b),
+    extras: [...extras.entries()].map(([date, times]) => ({ date, times: [...times].sort() })),
+  };
 }
 
 export function buildOptionsFromDays(days) {
@@ -268,22 +290,35 @@ export function dayAvailabilityLabel(time) {
   return isValidTimeFormat(time) ? time : '09:00–17:00';
 }
 
-export function buildAvailabilityByDay(rows) {
+export function buildAvailabilityByDay(rows, extraByDay) {
   const byDay = new Map();
   const seenByDay = new Map();
+  const ensureDay = (date) => {
+    if (typeof date !== 'string' || byDay.has(date)) return;
+    byDay.set(date, { names: [] });
+    seenByDay.set(date, new Set());
+  };
   for (const row of Array.isArray(rows) ? rows : []) {
-    const date = row?.raw?.date;
-    if (typeof date !== 'string') continue;
-    if (!byDay.has(date)) {
-      byDay.set(date, { names: [] });
-      seenByDay.set(date, new Set());
-    }
-    const day = byDay.get(date);
+    ensureDay(row?.raw?.date);
+  }
+  const push = (date, name) => {
+    if (typeof date !== 'string') return;
+    ensureDay(date);
     const seen = seenByDay.get(date);
+    if (!name || seen.has(name)) return;
+    seen.add(name);
+    byDay.get(date).names.push(name);
+  };
+  for (const row of Array.isArray(rows) ? rows : []) {
     for (const name of Array.isArray(row?.voters) ? row.voters : []) {
-      if (seen.has(name)) continue;
-      seen.add(name);
-      day.names.push(name);
+      push(row?.raw?.date, name);
+    }
+  }
+  if (extraByDay instanceof Map) {
+    for (const [date, day] of extraByDay) {
+      for (const name of Array.isArray(day?.names) ? day.names : []) {
+        push(date, name);
+      }
     }
   }
   return byDay;
