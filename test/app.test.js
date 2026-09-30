@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   buildHeatmap,
   buildAvailabilityByDay,
-  bestDaysByDay,
   buildOptionsFromDays,
   buildShareLink,
   buildViewModel,
@@ -30,19 +29,6 @@ import {
 
 const validDate = '2026-09-29';
 const validOption = { date: '2026-09-29', time: '18:00', label: null };
-
-test('bestDaysByDay marks days with the maximum unique-voter count', () => {
-  const options = [
-    { date: '2026-09-28', time: '18:00', label: null },
-    { date: '2026-09-29', time: '18:00', label: null },
-  ];
-  const responses = [
-    { name: 'Ana', selected: [0, 1], created_at: '2026-01-01' },
-    { name: 'Ben', selected: [0], created_at: '2026-01-02' },
-  ];
-  const best = bestDaysByDay(buildViewModel(options, responses).rows);
-  assert.deepEqual([...best], ['2026-09-28']);
-});
 
 test('mapCreationError flags the RLS password rejection', () => {
   assert.equal(mapCreationError('42501'), 'That password was not accepted.');

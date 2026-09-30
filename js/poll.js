@@ -1,6 +1,5 @@
 import {
   assignTileColors,
-  bestDaysByDay,
   buildAvailabilityByDay,
   buildViewModel,
   dayAvailabilityLabel,
@@ -65,13 +64,11 @@ function renderLegend(names) {  tileLegend.replaceChildren();
 function renderTiles(model) {
   currentModel = model;
   const availability = buildAvailabilityByDay(model.rows);
-  const bestDays = bestDaysByDay(model.rows);
   const colors = assignTileColors(model.names);
   for (const cell of document.querySelectorAll('#cal-grid .cal-day:not(.dim)')) {
     const date = dateFromCalendarCell(cell);
     if (!date) continue;
     cell.querySelector('.cal-tiles')?.remove();
-    cell.querySelector('.cal-best-star')?.remove();
     const day = availability.get(date);
     if (day?.names.length) {
       const tiles = document.createElement('span');
@@ -85,13 +82,6 @@ function renderTiles(model) {
         tiles.append(tile);
       }
       cell.append(tiles);
-    }
-    if (bestDays.has(date)) {
-      const star = document.createElement('span');
-      star.className = 'cal-best-star';
-      star.textContent = '★';
-      star.setAttribute('aria-label', 'Best day');
-      cell.append(star);
     }
   }
   renderLegend(model.names);

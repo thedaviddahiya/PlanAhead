@@ -124,20 +124,21 @@ export function createCalendar({
   }
 
   function selectDay(dateIso) {
-    const wasSameDay = selectedDate === dateIso;
     selectedDate = dateIso;
     let changed = false;
-    if (editorMode === 'full') {
-      const hadDay = daySlots.has(dateIso);
-      if (wasSameDay) {
-        const isActiveDayOnly = hadDay && slotsFor(dateIso).length === 0;
-        if (isActiveDayOnly) {
-          daySlots.delete(dateIso);
-        } else {
-          setSlots(dateIso, []);
-        }
+    const hadDay = daySlots.has(dateIso);
+    if (hadDay) {
+      daySlots.delete(dateIso);
+      changed = true;
+    } else if (editorMode === 'full') {
+      setSlots(dateIso, []);
+      changed = true;
+    } else {
+      const offered = offeredFor(dateIso);
+      if (offered.times.length > 0) {
+        setSlots(dateIso, offered.times);
         changed = true;
-      } else if (!hadDay) {
+      } else if (offered.dayOnly) {
         setSlots(dateIso, []);
         changed = true;
       }
